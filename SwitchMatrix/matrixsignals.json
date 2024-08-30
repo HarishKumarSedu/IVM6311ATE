@@ -1,0 +1,56 @@
+{
+    "VBG_TRM": {
+        "Source": {
+            "High": "CD_INT",
+            "Low": "GND"
+        },
+        "Destination": {
+            "High": "VOLTMETER+",
+            "Low": "GND"
+        }
+    },
+    "BST_HS_CL_TRM": {
+        "Source": {
+            "High": "CD_INT",
+            "Low": "GND"
+        },
+        "Destination": {
+            "High": "VOLTMETER+",
+            "Low": "GND"
+        }
+    },
+    "FRO_TRM": {
+        "Source": {
+            "High": "CD_ADD0",
+            "Low": "GND"
+        },
+        "Destination": {
+            "High": "DSO+",
+            "Low": "DSO-"
+        }
+    },
+    "CLD_OFFS_CAL": [
+        {
+            "Source": {
+                "High": "OUTP",
+                "Low": "GND"
+            },
+            "Destination": {
+                "High": "VOLTMETER+",
+                "Low": "GND"
+            }
+        },
+        
+        {
+            "Source": {
+                "High": "OUTN",
+                "Low": "GND"
+            },
+            "Destination": {
+                "High": "VOLTMETER+",
+                "Low": "GND"
+            }
+        }
+        
+    ]
+}
