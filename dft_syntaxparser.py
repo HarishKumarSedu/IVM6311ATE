@@ -79,8 +79,8 @@ class Parser:
                    bits = instruction[1].split(':')
                    register={
                    "RegAddr" : hex(int(instruction[0],16)),
-                   "MSB" :hex(int(bits[1],16)),
-                   "LSB" : hex(int(bits[0],16)),
+                   "MSB" :int(bits[0],16),
+                   "LSB" : int(bits[1],16),
                    "Data" : None,
                    }
                else:
@@ -459,3 +459,7 @@ class Parser:
             # print(signal)
         return instruction
     # Procedure__extract(instruction)
+
+if __name__ == '__main__':
+    parser = Parser()
+    print(parser.extract_TrimSweep__Instruction('trimsweep - 0xb0[7:4] "select code which sets atest voltage as close as possible to target"'))

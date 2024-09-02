@@ -1,0 +1,8 @@
+Trim:
+  - VBGR_ADJ_TRIM
+  - TSDN 
+
+Reference:
+  - UVLO
+  - OUT_TEST_FRO_VVCO  
+  - REF_LDO 

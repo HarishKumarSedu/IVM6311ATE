@@ -81,7 +81,7 @@ if __name__=='__main__':
     mcp=MCP2221()
     mcp2317 = MCP2317(mcp=mcp)
     time.sleep(1)
-    mcp2317.Switch(device_addr=0x23,row=8, col=1, Enable=True)
+    mcp2317.Switch(device_addr=0x23,row=8, col=5, Enable=True)
     # time.sleep(2)
     # mcp2317.Switch(row=4, col=1, Enable=False)
     # mcp2317.reset()
