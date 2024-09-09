@@ -405,6 +405,222 @@ class Parser:
         # extract_Force__Instruction(Instruction = 'Force_Current__SW__400mA "chiedere comando corrente"')
         # extract_Force__Instruction(Instruction = 'Force__SDWN__OPEN')
         # extract_Force__Instruction(Instruction = 'Force__SDWN__1.8V')
+
+    def extract_Force_Instruction_AP(self,instruction: str):
+        
+        force_signal = {}
+        def delist(x:List):
+            if isinstance(x,List) and len(x) != 0 :
+                x=x[-1]
+            elif len(x) == 0:
+                x = 0
+            else:
+                x = x
+            return x 
+
+        def value_unit(value, unit):
+            if 'm' in unit:
+                value = value*10**-3
+                unit = unit.strip('m').capitalize()
+
+            elif 'u' in unit:
+                value = value*10**-6
+                unit = unit.strip('u').capitalize()
+
+            elif 'n' in unit:
+                value = value*10**-9
+                unit = unit.strip('n').capitalize()
+
+            elif 'k' in unit:
+                value = value*10**3
+                unit = unit.strip('k').capitalize()
+
+            else :
+                value = value
+                unit = unit.capitalize()
+
+            return value, unit
+
+        # match the small or capital letter force key word
+        if re.match('[ForceAP]|[forceAP]', instruction) and re.search('__', instruction) :
+            signal = instruction
+            # signal = re.findall(re.compile('([A-Za-z0-9\.\-]+)'), Instruction)[1:] # find the force signal and with the value 
+            #remove the comments if there are any comments 
+            if re.search(r"\"(.*?)\"",signal):
+                signal = re.sub(r"\"(.*?)\"",'',signal)
+
+            signal = signal.split('__')[1:] # find the force signal and with the value 
+            #check the signal and value, array length 
+            # if the instruction has signal and the value array length must the 2 
+            signal_length = len(signal)
+            if signal_length == 2:
+                ########################
+                # for force instruction length 2 
+                # @pattren 'Force_Current__SW__400mA'
+                ########################
+
+                AP_mode = signal[0]
+                signal_name = signal[1]
+                    #check the signal unit and extract the number 
+                unit = delist(re.findall('[A-Za-z]+', signal[1].lower()))
+                if  value := float(delist(re.findall('[0-9\.\-]+', signal[1]))) :
+                    # check the volatage or current 
+                    value, unit = value_unit(value,unit)
+                # else check for the open or close 
+
+                elif value := delist(re.findall('OPEN', signal[1])):
+                    unit = None 
+                elif value := delist(re.findall('CLOSE', signal[1])):
+                        unit = None
+
+                force_signal = {
+                'AP_mode': AP_mode,
+                'Signal' : signal_name,
+                'Value'  : value ,
+                'Unit'   : unit
+                }
+
+
+            elif signal_length == 3:
+                ########################
+                # for force instruction length 2 
+                # @pattren 'Force_Current__SW__400mA'
+                ########################
+                AP_mode = signal[0]
+                signal_name = signal[1]
+                #check the signal unit and extract the number 
+                unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
+                if  value := float(delist(re.findall('[0-9\.\-]+', signal[2]))) :
+                    # check the volatage or current 
+                    value, unit = value_unit(value,unit)
+
+                # else check for the open or close 
+                elif value := delist(re.findall('OPEN', signal[1])):
+                    unit = None 
+                elif value := delist(re.findall('CLOSE', signal[1])):
+                    unit = None 
+
+                force_signal = {
+                    'AP_mode': AP_mode,
+                    'Signal' : signal_name,
+                    'Value'  : value ,
+                    'Unit'   : unit
+                }
+
+
+            print(force_signal)
+
+        return force_signal    
+    
+    def extract_Sweep_Instruction_AP(self,instruction: str):
+        
+        force_signal = {}
+        def delist(x:List):
+            if isinstance(x,List) and len(x) != 0 :
+                x=x[-1]
+            elif len(x) == 0:
+                x = 0
+            else:
+                x = x
+            return x 
+
+        def value_unit(value, unit):
+            if 'm' in unit:
+                value = value*10**-3
+                unit = unit.strip('m').capitalize()
+
+            elif 'u' in unit:
+                value = value*10**-6
+                unit = unit.strip('u').capitalize()
+
+            elif 'n' in unit:
+                value = value*10**-9
+                unit = unit.strip('n').capitalize()
+
+            elif 'k' in unit:
+                value = value*10**3
+                unit = unit.strip('k').capitalize()
+
+            else :
+                value = value
+                unit = unit.capitalize()
+
+            return value, unit
+
+        # match the small or capital letter force key word
+        if re.match('[CompSweepAP]|[compsweepAP]', instruction) and re.search('__', instruction) :
+            signal = instruction
+            # signal = re.findall(re.compile('([A-Za-z0-9\.\-]+)'), Instruction)[1:] # find the force signal and with the value 
+            #remove the comments if there are any comments 
+            if re.search(r"\"(.*?)\"",signal):
+                signal = re.sub(r"\"(.*?)\"",'',signal)
+
+            signal = signal.split('__')[1:] # find the force signal and with the value 
+            #check the signal and value, array length 
+            # if the instruction has signal and the value array length must the 2 
+            signal_length = len(signal)
+            print(signal_length)
+            if signal_length == 3:
+                ########################
+                # for force instruction length 2 
+                # @pattren 'Force_Current__SW__400mA'
+                ########################
+
+                AP_mode = signal[0]
+                signal_name = signal[1]
+                    #check the signal unit and extract the number 
+                unit = delist(re.findall('[A-Za-z]+', signal[1].lower()))
+                if  value := float(delist(re.findall('[0-9\.\-]+', signal[1]))) :
+                    # check the volatage or current 
+                    value, unit = value_unit(value,unit)
+                # else check for the open or close 
+
+                elif value := delist(re.findall('OPEN', signal[1])):
+                    unit = None 
+                elif value := delist(re.findall('CLOSE', signal[1])):
+                        unit = None
+
+                force_signal = {
+                'Signal' : signal_name,
+                'Value'  : value ,
+                'Unit'   : unit
+                }
+
+                print(force_signal)
+
+            elif signal_length == 4:
+                ########################
+                # for force instruction length 2 
+                # @pattren 'Force_Current__SW__400mA'
+                ########################
+                signal_name = signal[0]
+                startin_value = signal[1]
+                end_value = signal[2]
+                step_value = signal[3]
+                #check the signal unit and extract the number 
+                unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
+                if  value := float(delist(re.findall('[0-9\.\-]+', signal[2]))) :
+                    # check the volatage or current 
+                    value, unit = value_unit(value,unit)
+
+                # else check for the open or close 
+                elif value := delist(re.findall('OPEN', signal[1])):
+                    unit = None 
+                elif value := delist(re.findall('CLOSE', signal[1])):
+                    unit = None 
+
+                force_signal = {
+                    'Signal' : signal_name,
+                    'Start_Value'  : startin_value,
+                    'End_Value'   : end_value,
+                    'Step_value': step_value,
+                }
+
+
+            print(force_signal)
+        
+
+        return force_signal    
     
     def extract_Delay__Instruction(self,instruction: str):
         delay = 0
