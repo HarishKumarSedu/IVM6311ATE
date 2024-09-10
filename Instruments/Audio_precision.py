@@ -1,5 +1,5 @@
 import sys
-import clr          # clr is  in pythonnet library 2.5.2
+import clr # clr is  in pythonnet library 2.5.2
 #AP_API_Dll_path = r"C:\Program Files\Audio Precision\APx500 6.1\API"    #   Register the Audio Precision API DLL to use
 AP_API_Dll_path = r"C:\Program Files\Audio Precision\APx500 4.5\API"
 # AP_API_Dll_path = r"C:\Program Files\Audio Precision\APx500 5.0\API"
@@ -11,6 +11,8 @@ clr.AddReference("AudioPrecision.API") 	                                # Adding
 
 from AudioPrecision.API import *
 from .AudioPrecision import *
+
+
 
 #Serial digital
 
