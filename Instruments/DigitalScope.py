@@ -1,8 +1,12 @@
 import time
-
+import pyautogui
+import pywinauto
+from pywinauto import Application
+from pywinauto.keyboard import send_keys
 import pyvisa as visa
 from pyvisa.attributes import *
 from pyvisa.constants import *
+from pywinauto import Application
 
 class dpo_2014B:
 
@@ -117,22 +121,53 @@ class dpo_2014B:
         self.scope.write(f'MEASUrement:{Meas}:TYPE MEAN')
         return float(self.scope.query(f'MEASUrement:{Meas}:VALUE?'))
     
+
+    def openchoice_screenshot(self,file_path=''):
+        app = Application(backend='win32').connect(title='OpenChoice Desktop')
+        dlg = app.window(title='OpenChoice Desktop')
+        dlg.set_focus()
+        send_keys('^g') 
+        time.sleep(1) 
+        send_keys('^s')
+        time.sleep(1) 
+        send_keys(file_path)
+        send_keys('{ENTER}') 
+        print("Screenshot saved!")
+        time.sleep(1)
+        send_keys('{ENTER}')
+        time.sleep(1)
+        send_keys('{ESC}') 
+        #dlg.close()
+
 if __name__ == '__main__':
-    scope = dpo_2014B('USB0::0x0699::0x0456::C014546::INSTR')
-    # print(scope.meas_Freq())
-    # print(scope.get_error())
-    # scope.set_trigger__mode(mode='AUTO')
+    scope = dpo_2014B('USB0::0x0699::0x0401::C020132::INSTR')
+    scope.openchoice_screenshot('C:\\Users\\invlab\\Documents\\IVM6311ATE\\IVM6311ATE\\screenshot.png')
+   
+    # # print(scope.meas_Freq())
+    # # print(scope.get_error())
+
+    # # scope.set_trigger__mode(mode='AUTO')
+    # # scope.scope.write('ACQUIRE:STATE OFF')
+    # scope.set_trigger__mode(mode='NORM')
+    # # time.sleep(1)
+    # scope.init_scopePosEdge__Trigger(channel='CH3')
+    # # time.sleep(1)
+    # scope.single_Trigger__ON()
+    # time.sleep(1)
+    # # print('State',scope.acquireState)
+    # while scope.acquireState == True :
+    #    print('rotate')
+    # # time.sleep(1)
     # scope.scope.write('ACQUIRE:STATE OFF')
-    scope.set_trigger__mode(mode='NORM')
-    # time.sleep(1)
-    scope.init_scopePosEdge__Trigger(channel='CH3')
-    # time.sleep(1)
-    scope.single_Trigger__ON()
-    time.sleep(1)
-    # print('State',scope.acquireState)
-    while scope.acquireState == True :
-       print('rotate')
-    # time.sleep(1)
-    scope.scope.write('ACQUIRE:STATE OFF')
-    # scope.single_Trigger__RUN()
+    # # scope.single_Trigger__RUN()
+    # image_data = scope.acquire_screenshot()
+    # if image_data:
+    #     # Salva l'immagine su disco o visualizzala in altro modo
+    #     with open('screenshot.png', 'wb') as f:
+    #         f.write(image_data)
+    #     print("Immagine salvata come 'screenshot.png'.")
+    # else:
+    #     print("L'immagine non è stata acquisita correttamente."
+
+
 

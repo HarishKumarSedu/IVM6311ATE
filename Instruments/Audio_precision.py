@@ -151,13 +151,15 @@ class AP555:
     def Configure_Load(self, Load):
         self.APx.BenchMode.Setup.References.AnalogInputReferences.Watts.Value = Load
 
-    def Configure_Generator(self, Track = True, Level1 = -9999, Level2 = -9999, GenUnit = 'dBV', Freq = 1000, Waveform = 'Sine'):
+    def Configure_Generator(self, Track = True, Level1 = -9999, Level2 = -9999, GenUnit = 'dBV', Freq = 1000, Waveform = 'Sine', DC_offset1= 0, DC_offset2 = 0):
         self.APx.BenchMode.Generator.Waveform = Waveform
         self.APx.BenchMode.Generator.Levels.Unit = GenUnit
         self.APx.BenchMode.Generator.Levels.TrackFirstChannel = Track
         self.APx.BenchMode.Generator.Levels.SetValue(OutputChannelIndex.Ch1, str(Level1))
         self.APx.BenchMode.Generator.Levels.SetValue(OutputChannelIndex.Ch2, str(Level2))
         self.APx.BenchMode.Generator.Frequency.Value = Freq
+        self.APx.BenchMode.Generator.Levels.SetOffsetValue(OutputChannelIndex.Ch1, str(DC_offset1))
+        self.APx.BenchMode.Generator.Levels.SetOffsetValue(OutputChannelIndex.Ch2, str(DC_offset2))
 
     def Configure_Generator_TDM(self, Track = True, Level1 = -9999, GenUnit = 'dBFS', Freq = 1000, Waveform = 'Sine'):
         self.APx.BenchMode.Generator.Waveform = Waveform
