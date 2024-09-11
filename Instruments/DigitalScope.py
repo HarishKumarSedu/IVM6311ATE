@@ -127,7 +127,7 @@ class dpo_2014B:
         dlg = app.window(title='OpenChoice Desktop')
         dlg.set_focus()
         send_keys('^g') 
-        time.sleep(1) 
+        time.sleep(2) 
         send_keys('^s')
         time.sleep(1) 
         send_keys(file_path)
