@@ -2,8 +2,10 @@ import pandas as pd
 from dft_syntaxparser import Parser
 import re 
 from time import sleep
-# from Instruments.Keysight_34461 import A34461
-# from Instruments.DigitalScope import dpo_2014B
+from Instruments.Keysight_34461 import A34461
+from Instruments.DigitalScope import dpo_2014B
+from SwitchMatrix.mcp2221 import MCP2221
+from SwitchMatrix.mcp2317 import MCP2317
 import os 
 import yaml
 from pathlib import Path
@@ -13,8 +15,12 @@ import os
 import yaml
 from pathlib import Path
 
+############################ initialization
 data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
 data.head()
+mcp = MCP2221()
+mcp2317 = MCP2317(mcp=mcp)
+slave_address = 0x6c
 
 def typical_value_clean(value:str):
     value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -27,7 +33,7 @@ def typical_value_clean(value:str):
     if not isinstance(value,float) :
         value = float(value)
     return value
-typical_value_clean('1,2')
+# typical_value_clean('1,2')
 
 def read_yaml(path_to_yaml: Path) -> ConfigBox:
     """reads yaml file and returns
@@ -55,11 +61,13 @@ def DFT_Tests(path='Tests.yaml'):
     return read_yaml(path_to_yaml=path)
 
 def convert_value_unit(value_str):
+
     """
-    Converte una stringa contenente un numero e un'unità di misura.
-    - Riconosce i prefissi (kilo, milli, micro, nano, etc.).
-    - Rimuove l'unità di misura (Volt, Ampere, etc.).
+    Converts a string containing a number and a unit of measurement.
+    - Recognizes prefixes (kilo, milli, micro, nano, etc.).
+    - Removes the unit of measurement (Volt, Ampere, etc.).
     """
+
     prefixes = {
         'k': 10**3,    # kilo
         'm': 10**-3,   # milli
@@ -69,35 +77,36 @@ def convert_value_unit(value_str):
         'p': 10**-12   # pico
     }
 
-    # Usa regex per separare il numero dall'unità
+    
     match = re.match(r"([-+]?\d*\.?\d+)([a-zA-Z]*)", value_str)
     if match:
         value, unit = match.groups()
-        value = float(value)  # Converte il valore numerico in float
+        value = float(value)  
 
-        # Controlla se l'unità inizia con un prefisso conosciuto
+        
         if unit and unit[0].lower() in prefixes:
             prefix = unit[0].lower()
             multiplier = prefixes[prefix]
-            # Aggiorna il valore usando il moltiplicatore
+            
             value *= multiplier
         
-        # Restituisce solo il valore numerico
+        
         return value
     
-    # Se non è un valore numerico con unità, ritorna la stringa originale
+    
     return value_str
 
 def convert_dict_values(data):
     """
-    Converte i valori di un dizionario da stringhe con unità di misura a float,
-    mantenendo le stringhe originali se non possono essere convertite.
+    Converts the values of a dictionary from strings with units of measurement to floats,
+    keeping the original strings if they cannot be converted.
     """
+
     converted_dict = {}
     for key, value in data.items():
-        # Prova a convertire ogni valore
+        
         converted_value = convert_value_unit(value)
-        converted_dict[key] = converted_value  # Memorizza il valore, convertito o lasciato invariato
+        converted_dict[key] = converted_value 
 
     return converted_dict
 
@@ -110,6 +119,33 @@ def extract_last_n_values(data, n):
     
     return last_n_values
 
+def execute_startup():
+    startup_procedure = procedures['Startup'].loc[0].split('\n')
+    for instruction in startup_procedure:
+        instruction = instruction.lower()
+        if re.match('0x',instruction):
+            reg_data = parser.extract_RegisterAddress__Instruction(instruction) 
+            # print(reg_data)
+            write_device(reg_data)
+        if re.match('Force__SDWN__1.8V'.lower(), instruction):
+            print('Force 1.8V on SDWN')
+            mcp2317.Switch(device_addr=0x23,row=8, col=4, Enable=True)
+
+def write_device(data:{}):
+    device_data = mcp.mcpRead(SlaveAddress=slave_address,data=[int(data.get('RegAddr'),16)])[0]
+    # print(f'Read data {hex(device_data)} ')
+    bit_width = 2**(data.get('MSB') - data.get('LSB')+1)
+    # print(bit_width)
+    if int(data.get('Data'),16) < bit_width :
+        mask = ~((bit_width-1) << data.get('LSB'))
+        # print(f'mask {hex(256+mask)}')
+        device_data = (device_data & mask) | ((int(data.get('Data'),16)) << data.get('LSB'))
+        # print(f'Data write {hex(device_data)}')
+        mcp.mcpWrite(SlaveAddress=slave_address, data=[int(data.get('RegAddr'),16),device_data])
+        # written_data = mcp.mcpRead(SlaveAddress=slave_address,data=[int(data.get('RegAddr'),16)])[0]
+        # print(f' data written {hex(written_data)}')
+    else:
+        print(f'Data is outof width ')
 
 def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
     gen_value = -14.067
@@ -124,7 +160,7 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
         if re.match('run',instruction):
             if re.findall('startup', instruction):
                print('Startup Procedure')
-            #    execute_startup()
+               execute_startup()
             if re.findall('enable_ana_testpoint', instruction):
                 print('execute_Enable_Ana_Testpoint Procedure')
                 # execute_Enable_Ana_Testpoint()

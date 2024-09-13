@@ -6,3 +6,12 @@ Reference:
   - UVLO
   - OUT_TEST_FRO_VVCO  
   - REF_LDO 
+
+AZ_COMP:
+  - 3rd STG Current
+  - 2nd STG Current  
+  - 1st STG Current 
+  - Ground AZCOMP
+  - OUTN_EXT_PRT
+  - OUTP_EXT_PRT
+  - VCM_AVDD
