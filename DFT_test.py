@@ -4,6 +4,7 @@ import re
 from time import sleep
 from Instruments.Keysight_34461 import A34461
 from Instruments.DigitalScope import dpo_2014B
+from Instruments.KeySight_N670x import N670x
 from SwitchMatrix.mcp2221 import MCP2221
 from SwitchMatrix.mcp2317 import MCP2317
 import os 
@@ -17,11 +18,11 @@ from pathlib import Path
 
 ############################ initialization
 data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
+procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
 data.head()
 mcp = MCP2221()
 mcp2317 = MCP2317(mcp=mcp)
 slave_address = 0x6c
-procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
 
 def typical_value_clean(value:str):
     value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -160,6 +161,29 @@ def execute_Enable_Ana_Testpoint():
             print('Force SDWN OPEN')
             mcp2317.Switch(device_addr=0x23,row=8, col=4, Enable=False)
 
+def measure_value_check(measure_signal:{},typical:float):
+    if measure_signal :
+        signal_Unit = measure_signal.get('Unit')
+        measure_values = None
+        print(signal_Unit)
+        if re.search('voltage', signal_Unit):
+            meter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
+            mcp2317.Switch(device_addr=0x23,row=8, col=1, Enable=True) # Enable the Volt meter 
+            sleep(0.1)
+            measure_values = meter.meas_V()
+            print(f' value : {measure_values}')
+
+        if re.search('current', signal_Unit):
+            meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+            mcp2317.Switch(device_addr=0x23,row=8, col=5, Enable=True) # Enable the Volt meter 
+            sleep(0.1)
+            meter.outp_ON(channel=3)
+            sleep(1)
+            measure_values = meter.getCurrent(channel=3)
+            print(f' value : {measure_values}')
+            sleep(1)
+            meter.outp_OFF(channel=3)
+
 def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
     test_name = test_name
     instructions = data[test_name].loc[3].split('\n')
@@ -180,26 +204,26 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
             print(reg_data)
             # write_device(reg_data)
 
-        if re.match('forceap', instruction):
-            force_signal = parser.extract_Force_Instruction_AP(instruction)
-            print(f'force_signal  > {force_signal}')
-            lim = extract_last_n_values(force_signal, len(force_signal)-4)
-            force_ap(force_signal, lim[0])
+        # if re.match('forceap', instruction):
+        #     force_signal = parser.extract_Force_Instruction_AP(instruction)
+        #     print(f'force_signal  > {force_signal}')
+        #     lim = extract_last_n_values(force_signal, len(force_signal)-4)
+        #     force_ap(force_signal, lim[0])
 
 
-        if re.match('compsweepap', instruction):
-            sweep_signal = parser.extract_Sweep_Instruction_AP(instruction)
-            print(f'sweeep_signal  > {sweep_signal}')
-            converted_dict = convert_dict_values(sweep_signal)
-            print('#############################################', converted_dict)
-            lim = extract_last_n_values(converted_dict, len(converted_dict)-1)
-            sweep_ap(lim[0], lim[1], lim[2])
+        # if re.match('compsweepap', instruction):
+        #     sweep_signal = parser.extract_Sweep_Instruction_AP(instruction)
+        #     print(f'sweeep_signal  > {sweep_signal}')
+        #     converted_dict = convert_dict_values(sweep_signal)
+        #     print('#############################################', converted_dict)
+        #     lim = extract_last_n_values(converted_dict, len(converted_dict)-1)
+        #     sweep_ap(lim[0], lim[1], lim[2])
 
         if re.match('measure',instruction):
             print(instruction)
             measure_signal = parser.extract_Measure__Instruction(instruction)
             print(f'measure_signal  > {measure_signal}')
-            # measure_value_check(measure_signal=measure_signal,typical=typical)
+            measure_value_check(measure_signal=measure_signal,typical=typical)
 
 
 def force_ap(force_signal:{}, start_value):
