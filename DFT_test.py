@@ -21,6 +21,7 @@ data.head()
 mcp = MCP2221()
 mcp2317 = MCP2317(mcp=mcp)
 slave_address = 0x6c
+procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
 
 def typical_value_clean(value:str):
     value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -147,9 +148,19 @@ def write_device(data:{}):
     else:
         print(f'Data is outof width ')
 
+def execute_Enable_Ana_Testpoint():
+    startup_procedure = procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
+    for instruction in startup_procedure:
+        instruction = instruction.lower()
+        if re.match('0x',instruction):
+            print(parser.extract_RegisterAddress__Instruction(instruction)) 
+            reg_data = parser.extract_RegisterAddress__Instruction(instruction) 
+            write_device(reg_data)
+        if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
+            print('Force SDWN OPEN')
+            mcp2317.Switch(device_addr=0x23,row=8, col=4, Enable=False)
+
 def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
-    gen_value = -14.067
-    AP_file_DC = "Char_6311_DC.approjx"
     test_name = test_name
     instructions = data[test_name].loc[3].split('\n')
     typical = typical_value_clean(data[test_name].loc[6]) 
