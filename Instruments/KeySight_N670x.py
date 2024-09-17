@@ -419,8 +419,8 @@ class N670x:
         return float(self.my_instr.query('FETC:CURR?'))
         
     # o enable seamless voltage or current autoranging
-    def setMeter_Range_Auto__Current(self,channel:int):
-        self.my_instr.write(f'SENS:CURR:RANG:AUTO ON,(@{str(channel)})')
+    def setMeter_Range_Auto__Current(self,channel:int,Curr_range='10e-6'):
+        self.my_instr.write(f'SENS:CURR:RANG {Curr_range},(@{str(channel)})')
 
     def setMeter_Range_Auto__Voltage(self,channel:int):
         self.my_instr.write(f'SENS:VOLT:RANG:AUTO ON,(@{str(channel)})')

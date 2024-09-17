@@ -74,14 +74,17 @@ class MCP2317:
         # else:
         #     warnings.warn(f'Signal Matrix Selection Outof  Context of the Matrix row :{row} ; col:{col}')
     def Switch_reset(self,device_addr=0x20):  
-            self.mcp2221.mcpWrite(device_addr, [self.IODIRA, self.AllINput]) # configure all the bank A gpios are as outputs 
-            self.mcp2221.mcpWrite(device_addr, [self.IODIRB, self.AllINput]) # configure all the bank B gpios are as outputs 
+            self.mcp2221.mcpWrite(device_addr, [self.GPIOA, 0x00]) # configure all the bank A gpios are as outputs 
+            self.mcp2221.mcpWrite(device_addr, [self.GPIOB,0x00]) # configure all the bank B gpios are as outputs 
                 
 if __name__=='__main__':
     mcp=MCP2221()
     mcp2317 = MCP2317(mcp=mcp)
     time.sleep(1)
-    mcp2317.Switch(device_addr=0x23,row=8, col=5, Enable=True)
+    mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=False)
+    mcp2317.Switch(device_addr=0x20,row=1, col=2, Enable=True)
+    mcp2317.Switch(device_addr=0x21,row=3, col=3, Enable=True)
+    # mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=False)
     # time.sleep(2)
     # mcp2317.Switch(row=4, col=1, Enable=False)
     # mcp2317.reset()

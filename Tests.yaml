@@ -8,10 +8,10 @@ Reference:
   - REF_LDO 
 
 AZ_COMP:
-  - 3rd STG Current
-  - 2nd STG Current  
-  - 1st STG Current 
-  - Ground AZCOMP
+  - 3rd_STG_Current
+  - 2nd_STG_Current  
+  - 1st_STG_Current 
+  - Ground_AZCOMP
   - OUTN_EXT_PRT
   - OUTP_EXT_PRT
   - VCM_AVDD

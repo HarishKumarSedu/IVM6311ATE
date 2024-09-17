@@ -19,9 +19,11 @@ from pathlib import Path
 ############################ initialization
 data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
 procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
+procedures.columns
 data.head()
 mcp = MCP2221()
 mcp2317 = MCP2317(mcp=mcp)
+meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
 slave_address = 0x6c
 
 def typical_value_clean(value:str):
@@ -127,11 +129,11 @@ def execute_startup():
         instruction = instruction.lower()
         if re.match('0x',instruction):
             reg_data = parser.extract_RegisterAddress__Instruction(instruction) 
-            # print(reg_data)
             write_device(reg_data)
         if re.match('Force__SDWN__1.8V'.lower(), instruction):
             print('Force 1.8V on SDWN')
-            mcp2317.Switch(device_addr=0x23,row=8, col=4, Enable=True)
+            # meter.outp_ON(channel=4)
+            mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=True)
 
 def write_device(data:{}):
     device_data = mcp.mcpRead(SlaveAddress=slave_address,data=[int(data.get('RegAddr'),16)])[0]
@@ -150,7 +152,7 @@ def write_device(data:{}):
         print(f'Data is outof width ')
 
 def execute_Enable_Ana_Testpoint():
-    startup_procedure = procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
+    startup_procedure = procedures['Enable_Ana_Testpoint_AZ_comp'].loc[0].split('\n')
     for instruction in startup_procedure:
         instruction = instruction.lower()
         if re.match('0x',instruction):
@@ -159,7 +161,7 @@ def execute_Enable_Ana_Testpoint():
             write_device(reg_data)
         if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
             print('Force SDWN OPEN')
-            mcp2317.Switch(device_addr=0x23,row=8, col=4, Enable=False)
+            mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=False)
 
 def measure_value_check(measure_signal:{},typical:float):
     if measure_signal :
@@ -168,37 +170,42 @@ def measure_value_check(measure_signal:{},typical:float):
         print(signal_Unit)
         if re.search('voltage', signal_Unit):
             meter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
-            mcp2317.Switch(device_addr=0x23,row=8, col=1, Enable=True) # Enable the Volt meter 
+            mcp2317.Switch(device_addr=0x20,row=1, col=1, Enable=True) 
             sleep(0.1)
             measure_values = meter.meas_V()
             print(f' value : {measure_values}')
 
         if re.search('current', signal_Unit):
             meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
-            mcp2317.Switch(device_addr=0x23,row=8, col=5, Enable=True) # Enable the Volt meter 
+            mcp2317.Switch(device_addr=0x20,row=1, col=2, Enable=True)
+            sleep(1)
+            mcp2317.Switch(device_addr=0x21,row=3, col=3, Enable=True) 
             sleep(0.1)
             meter.outp_ON(channel=3)
+            meter.setMeter_Range_Auto__Current(channel=3)
             sleep(1)
             measure_values = meter.getCurrent(channel=3)
-            print(f' value : {measure_values}')
+            input(f' value : {measure_values}')
             sleep(1)
             meter.outp_OFF(channel=3)
 
 def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
     test_name = test_name
     instructions = data[test_name].loc[3].split('\n')
+    print(data[test_name].loc[6])
     typical = typical_value_clean(data[test_name].loc[6]) 
+    print(typical)
     for instruction in instructions:
         instruction = instruction.lower()
         print(instruction)
         # parse the instructions
         if re.match('run',instruction):
+
             if re.findall('startup', instruction):
                print('Startup Procedure')
                execute_startup()
-            if re.findall('enable_ana_testpoint', instruction):
-                print('execute_Enable_Ana_Testpoint Procedure')
-                # execute_Enable_Ana_Testpoint()
+            if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
+                execute_Enable_Ana_Testpoint()
         if re.match('0x',instruction):
             reg_data = parser.extract_RegisterAddress__Instruction(instruction)
             print(reg_data)
@@ -226,26 +233,37 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
             measure_value_check(measure_signal=measure_signal,typical=typical)
 
 
-def force_ap(force_signal:{}, start_value):
-        dc_mode = force_signal.get('AP_mode')
-        if re.search('dc', dc_mode):
-            print('DC_mode')
+# def force_ap(force_signal:{}, start_value):
+#         dc_mode = force_signal.get('AP_mode')
+#         if re.search('dc', dc_mode):
+#             print('DC_mode')
             # mcp2317.Switch(device_addr=0x23,row=8, col=5, Enable=True)
             # path = os.path.join(os.getcwd() + "PA_template" + AP_file_DC)
             # ap = Audio_precision.AP555(mode = 'BenchMode', fullpath=path)
             # ap.Configure_Generator(True, gen_value , Freq=1000, Waveform = 'Sine, Var Phase')
             # ap.FilterSel(HP_Mode='Elliptic', LP_Mode='Elliptic', Weighting="None")
             # ap.Enable_Generator(True)
-
-def sweep_ap(start_value, end_value, step):
-    print("Sei dentro")
             
-
 if __name__ == '__main__':
     parser = Parser()
     AZ_COMP_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
     tests = DFT_Tests()
     print(tests)
-    for test in tests.AZ_COMP:
-        print(f'............ {test}')
-        AZcomp_DFT(AZ_COMP_data, test)
+    try:
+        for test in tests.AZ_COMP:
+            print(f'............ {test}')
+            AZcomp_DFT(AZ_COMP_data, test)
+    except  TypeError as e:
+        print(f'Entered in Exception loop :> {e}')
+        pass 
+    except  KeyboardInterrupt:
+        for i in range (0x20,0x28):
+            mcp2317.Switch_reset(device_addr=i)
+    except  Exception as e:
+        print(f'Entered in Exception loop :> {e}')
+        for i in range (0x20,0x28):
+            mcp2317.Switch_reset(device_addr=i)
+    # finally:
+    #     print(f'Entered in Final loop')
+    #     for i in range (0x20,0x28):
+    #         mcp2317.Switch_reset(device_addr=i)

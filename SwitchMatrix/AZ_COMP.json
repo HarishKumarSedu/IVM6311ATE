@@ -1,223 +1,223 @@
 {
     "0": {
-        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 1,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 1,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 1,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 1,
-                "col": 4
-            }
-        },
-        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 2,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 2,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 2,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x20",
-            "relay": {
-                "row": 2,
-                "col": 4
-            }
-        },
-        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 3,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 3,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 3,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 3,
-                "col": 4
-            }
-        },
-        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 4,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 4,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 4,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x21",
-            "relay": {
-                "row": 4,
-                "col": 4
-            }
-        },
-        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 5,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 5,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 5,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 5,
-                "col": 4
-            }
-        },
-        "{'Source': {'High': 'VBAT_S\\r', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 6,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'VBAT_S\\r', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 6,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'VBAT_S\\r', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 6,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'VBAT_S\\r', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x22",
-            "relay": {
-                "row": 6,
-                "col": 4
-            }
-        },
-        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x23",
-            "relay": {
-                "row": 7,
-                "col": 1
-            }
-        },
-        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x23",
-            "relay": {
-                "row": 7,
-                "col": 2
-            }
-        },
-        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x23",
-            "relay": {
-                "row": 7,
-                "col": 3
-            }
-        },
-        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
-            "deviceAddr": "0x23",
-            "relay": {
-                "row": 7,
-                "col": 4
-            }
-        },
         "{'Source': {'High': 'SDWN_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
-            "deviceAddr": "0x23",
+            "deviceAddr": "0x20",
             "relay": {
-                "row": 8,
+                "row": 1,
                 "col": 1
             }
         },
-        "{'Source': {'High': 'SDWN_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
-            "deviceAddr": "0x23",
+        "{'Source': {'High': 'SDWN_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x20",
             "relay": {
-                "row": 8,
+                "row": 1,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'SDWN_S', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
-            "deviceAddr": "0x23",
+        "{'Source': {'High': 'SDWN_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x20",
             "relay": {
-                "row": 8,
+                "row": 1,
                 "col": 3
             }
         },
         "{'Source': {'High': 'SDWN_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x20",
+            "relay": {
+                "row": 1,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x20",
+            "relay": {
+                "row": 2,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x20",
+            "relay": {
+                "row": 2,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x20",
+            "relay": {
+                "row": 2,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'VBSO_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x20",
+            "relay": {
+                "row": 2,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'VBAT_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 3,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'VBAT_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 3,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'VBAT_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 3,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'VBAT_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 3,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 4,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 4,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 4,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'SW_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x21",
+            "relay": {
+                "row": 4,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 5,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 5,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 5,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'BIAS_S', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 5,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 6,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 6,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 6,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'BIAS_F', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x22",
+            "relay": {
+                "row": 6,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 7,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 7,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 7,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'VBSO_F', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 7,
+                "col": 4
+            }
+        },
+        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'Voltmeter+', 'Low': 'Voltmeter-'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 8,
+                "col": 1
+            }
+        },
+        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 8,
+                "col": 2
+            }
+        },
+        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
+            "deviceAddr": "0x23",
+            "relay": {
+                "row": 8,
+                "col": 3
+            }
+        },
+        "{'Source': {'High': 'SW_F_PIN', 'Low': 'GND'}, 'Destination': {'High': 'SDWN_Short+', 'Low': 'SDWN_Short-'}}": {
             "deviceAddr": "0x23",
             "relay": {
                 "row": 8,
@@ -233,14 +233,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'VBAT_PWR', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'VBAT_PWR', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x24",
             "relay": {
                 "row": 1,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'VBAT_PWR', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'VBAT_PWR', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x24",
             "relay": {
                 "row": 1,
@@ -261,14 +261,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'VDD', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'VDD', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x24",
             "relay": {
                 "row": 2,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'VDD', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'VDD', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x24",
             "relay": {
                 "row": 2,
@@ -289,14 +289,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'SDI', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'SDI', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x25",
             "relay": {
                 "row": 3,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'SDI', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'SDI', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x25",
             "relay": {
                 "row": 3,
@@ -317,14 +317,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'SCL', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'SCL', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x26",
             "relay": {
                 "row": 5,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'SCL', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'SCL', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x26",
             "relay": {
                 "row": 5,
@@ -345,14 +345,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'SDA', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'SDA', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x26",
             "relay": {
                 "row": 6,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'SDA', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'SDA', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x26",
             "relay": {
                 "row": 6,
@@ -373,14 +373,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'FSYN', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'FSYN', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x27",
             "relay": {
                 "row": 7,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'FSYN', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'FSYN', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x27",
             "relay": {
                 "row": 7,
@@ -401,14 +401,14 @@
                 "col": 1
             }
         },
-        "{'Source': {'High': 'BCLK', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'Ammeter-'}}": {
+        "{'Source': {'High': 'BCLK', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter+', 'Low': 'GND'}}": {
             "deviceAddr": "0x27",
             "relay": {
                 "row": 8,
                 "col": 2
             }
         },
-        "{'Source': {'High': 'BCLK', 'Low': 'GND'}, 'Destination': {'High': 'DSO+', 'Low': 'DSO-'}}": {
+        "{'Source': {'High': 'BCLK', 'Low': 'GND'}, 'Destination': {'High': 'Ammeter-', 'Low': 'GND'}}": {
             "deviceAddr": "0x27",
             "relay": {
                 "row": 8,
