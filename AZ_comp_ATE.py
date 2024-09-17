@@ -206,6 +206,7 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
                execute_startup()
             if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
                 execute_Enable_Ana_Testpoint()
+                
         if re.match('0x',instruction):
             reg_data = parser.extract_RegisterAddress__Instruction(instruction)
             print(reg_data)
