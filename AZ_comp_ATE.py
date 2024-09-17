@@ -206,11 +206,12 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
                execute_startup()
             if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
                 execute_Enable_Ana_Testpoint()
-                
+
         if re.match('0x',instruction):
             reg_data = parser.extract_RegisterAddress__Instruction(instruction)
             print(reg_data)
-            # write_device(reg_data)
+            print("last value read", mcp.mcpRead(slave_address, data = [0x1A]))
+            write_device(reg_data)
 
         # if re.match('forceap', instruction):
         #     force_signal = parser.extract_Force_Instruction_AP(instruction)
