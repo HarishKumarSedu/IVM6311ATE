@@ -5,6 +5,7 @@ from time import sleep
 from Instruments.Keysight_34461 import A34461
 from Instruments.DigitalScope import dpo_2014B
 from Instruments.KeySight_N670x import N670x
+from Instruments.Keysight_E3648 import E3648
 from SwitchMatrix.mcp2221 import MCP2221
 from SwitchMatrix.mcp2317 import MCP2317
 import os 
@@ -24,6 +25,7 @@ data.head()
 mcp = MCP2221()
 mcp2317 = MCP2317(mcp=mcp)
 meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+ps_gpib = E3648('GPIB0::6::INSTR')
 slave_address = 0x6c
 
 def typical_value_clean(value:str):
@@ -189,6 +191,25 @@ def measure_value_check(measure_signal:{},typical:float):
             sleep(1)
             meter.outp_OFF(channel=3)
 
+def force_signal(force_signal_instruction:{}):
+    if force_signal_instruction :
+        signal_Unit = force_signal_instruction.get('Unit')
+        signal_name = force_signal_instruction.get('Signal')
+        force_signal_instruction = None
+        print(signal_Unit)
+        if re.search('v', signal_Unit):
+
+            if re.search('outn', signal_name):
+                signal_force = force_signal_instruction.get('value')
+                ps_gpib.setVoltage(channel=1, voltage =signal_force)
+                sleep(0.5)
+                ps_gpib.outp_ON(channel=1)
+            if re.search('outp', signal_name):
+                signal_force = force_signal_instruction.get('value')
+                ps_gpib.setVoltage(channel=2, voltage=signal_force)
+                sleep(0.5)
+                ps_gpib.outp_ON(channel=1)
+                
 def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
     test_name = test_name
     instructions = data[test_name].loc[3].split('\n')
@@ -210,8 +231,13 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
         if re.match('0x',instruction):
             reg_data = parser.extract_RegisterAddress__Instruction(instruction)
             print(reg_data)
-            print("last value read", mcp.mcpRead(slave_address, data = [0x1A]))
             write_device(reg_data)
+        
+        if re.match('force', instruction):
+            force_signal_instruction = parser.extract_Force__Instruction(instruction)
+            print(f'force_signal  > {force_signal_instruction}')
+            force_signal(force_signal_instruction=force_signal_instruction)
+            
 
         # if re.match('forceap', instruction):
         #     force_signal = parser.extract_Force_Instruction_AP(instruction)
@@ -261,10 +287,16 @@ if __name__ == '__main__':
     except  KeyboardInterrupt:
         for i in range (0x20,0x28):
             mcp2317.Switch_reset(device_addr=i)
+            ps_gpib.outp_OFF(channel=1)
+            sleep(0.5)
+            ps_gpib.outp_OFF(channel=2)
     except  Exception as e:
         print(f'Entered in Exception loop :> {e}')
         for i in range (0x20,0x28):
             mcp2317.Switch_reset(device_addr=i)
+            ps_gpib.outp_OFF(channel=1)
+            sleep(0.5)
+            ps_gpib.outp_OFF(channel=2)
     # finally:
     #     print(f'Entered in Final loop')
     #     for i in range (0x20,0x28):

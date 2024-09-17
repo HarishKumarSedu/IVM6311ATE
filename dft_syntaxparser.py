@@ -678,4 +678,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_TrimSweep__Instruction('trimsweep - 0xb0[7:4] "select code which sets atest voltage as close as possible to target"'))
+    # print(parser.extract_TrimSweep__Instruction('trimsweep - 0xb0[7:4] "select code which sets atest voltage as close as possible to target"'))
+    print(parser.extract_Force__Instruction('Force__OUTP__2V'))
+    
