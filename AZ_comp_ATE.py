@@ -8,6 +8,7 @@ from Instruments.KeySight_N670x import N670x
 from Instruments.Keysight_E3648 import E3648
 from SwitchMatrix.mcp2221 import MCP2221
 from SwitchMatrix.mcp2317 import MCP2317
+import traceback
 import os 
 import yaml
 from pathlib import Path
@@ -30,6 +31,7 @@ slave_address = 0x6c
 
 def typical_value_clean(value:str):
     value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
+    value = re.sub(r'[a-zA-Z]+$', '', value)
     value = (lambda value : float(value.replace('m',''))*10**-3  if isinstance(value,str)    and re.findall('m',value) else value)(value=value)
     value = (lambda value : float(value.replace('n',''))*10**-9  if isinstance(value,str)    and re.findall('n',value)  else value)(value=value)
     value = (lambda value : float(value.replace('u',''))*10**-6  if isinstance(value,str)    and re.findall('u',value)  else value)(value=value)
@@ -187,7 +189,8 @@ def measure_value_check(measure_signal:{},typical:float):
             meter.setMeter_Range_Auto__Current(channel=3)
             sleep(1)
             measure_values = meter.getCurrent(channel=3)
-            input(f' value : {measure_values}')
+            print(f' value : {measure_values}')
+            # input(f' value : {measure_values}')
             sleep(1)
             meter.outp_OFF(channel=3)
 
@@ -195,20 +198,22 @@ def force_signal(force_signal_instruction:{}):
     if force_signal_instruction :
         signal_Unit = force_signal_instruction.get('Unit')
         signal_name = force_signal_instruction.get('Signal')
-        force_signal_instruction = None
         print(signal_Unit)
-        if re.search('v', signal_Unit):
+        if re.search('V', signal_Unit):
 
             if re.search('outn', signal_name):
-                signal_force = force_signal_instruction.get('value')
+                signal_force = force_signal_instruction.get('Value')
+                ps_gpib.setCurrent(channel=1, current = 0.2)
                 ps_gpib.setVoltage(channel=1, voltage =signal_force)
                 sleep(0.5)
                 ps_gpib.outp_ON(channel=1)
             if re.search('outp', signal_name):
-                signal_force = force_signal_instruction.get('value')
+                signal_force = force_signal_instruction.get('Value')
+                ps_gpib.setCurrent(channel=2, current = 0.2)
                 ps_gpib.setVoltage(channel=2, voltage=signal_force)
                 sleep(0.5)
-                ps_gpib.outp_ON(channel=1)
+                ps_gpib.outp_ON(channel=2)
+        force_signal_instruction = None
                 
 def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
     test_name = test_name
@@ -273,6 +278,8 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
             # ap.Enable_Generator(True)
             
 if __name__ == '__main__':
+    meter.outp_ON(channel=1)
+    meter.outp_ON(channel=4)
     parser = Parser()
     AZ_COMP_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
     tests = DFT_Tests()
@@ -283,6 +290,7 @@ if __name__ == '__main__':
             AZcomp_DFT(AZ_COMP_data, test)
     except  TypeError as e:
         print(f'Entered in Exception loop :> {e}')
+        traceback.print_exc()
         pass 
     except  KeyboardInterrupt:
         for i in range (0x20,0x28):
@@ -292,11 +300,17 @@ if __name__ == '__main__':
             ps_gpib.outp_OFF(channel=2)
     except  Exception as e:
         print(f'Entered in Exception loop :> {e}')
+        traceback.print_exc()
         for i in range (0x20,0x28):
             mcp2317.Switch_reset(device_addr=i)
             ps_gpib.outp_OFF(channel=1)
             sleep(0.5)
             ps_gpib.outp_OFF(channel=2)
+
+    ps_gpib.outp_OFF(channel=1)
+    ps_gpib.outp_OFF(channel=2)
+    meter.outp_OFF(channel=1)
+    meter.outp_OFF(channel=4)
     # finally:
     #     print(f'Entered in Final loop')
     #     for i in range (0x20,0x28):
