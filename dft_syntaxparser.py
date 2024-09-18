@@ -676,6 +676,19 @@ class Parser:
         return instruction
     # Procedure__extract(instruction)
 
+    def typical_value_clean(self,value:str):
+        value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
+        value = re.sub(r'[a-zA-Z]+$', '', value)
+        value = (lambda value : float(value.replace('m',''))*10**-3  if isinstance(value,str)    and re.findall('m',value) else value)(value=value)
+        value = (lambda value : float(value.replace('n',''))*10**-9  if isinstance(value,str)    and re.findall('n',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('u',''))*10**-6  if isinstance(value,str)    and re.findall('u',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('k',''))*10**3   if isinstance(value,str)    and re.findall('k',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('M',''))*10**6   if isinstance(value,str)    and re.findall('M',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('G',''))*10**9   if isinstance(value,str)    and re.findall('G',value)  else value)(value=value)
+        if not isinstance(value,float) :
+            value = float(value)
+        return value
+
 if __name__ == '__main__':
     parser = Parser()
     # print(parser.extract_TrimSweep__Instruction('trimsweep - 0xb0[7:4] "select code which sets atest voltage as close as possible to target"'))
