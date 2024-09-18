@@ -678,7 +678,8 @@ class Parser:
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
-        value = re.sub(r'[a-zA-Z]+$', '', value)
+        # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
+        value = re.sub(r'[v|V]|[a|A]|[hZ|HZ]+$', '', value) # use it when you want to replace the any string in the number 
         value = (lambda value : float(value.replace('m',''))*10**-3  if isinstance(value,str)    and re.findall('m',value) else value)(value=value)
         value = (lambda value : float(value.replace('n',''))*10**-9  if isinstance(value,str)    and re.findall('n',value)  else value)(value=value)
         value = (lambda value : float(value.replace('u',''))*10**-6  if isinstance(value,str)    and re.findall('u',value)  else value)(value=value)
@@ -692,5 +693,5 @@ class Parser:
 if __name__ == '__main__':
     parser = Parser()
     # print(parser.extract_TrimSweep__Instruction('trimsweep - 0xb0[7:4] "select code which sets atest voltage as close as possible to target"'))
-    print(parser.extract_Force__Instruction('Force__OUTP__2V'))
+    print(parser.value_clean('2ma'))
     
