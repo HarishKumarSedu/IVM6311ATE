@@ -676,7 +676,7 @@ class Parser:
         return instruction
     # Procedure__extract(instruction)
 
-    def typical_value_clean(self,value:str):
+    def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
         value = re.sub(r'[a-zA-Z]+$', '', value)
         value = (lambda value : float(value.replace('m',''))*10**-3  if isinstance(value,str)    and re.findall('m',value) else value)(value=value)
