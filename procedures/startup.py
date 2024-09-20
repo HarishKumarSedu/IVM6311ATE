@@ -1,6 +1,5 @@
 
 import time 
-from IvmDriver.logger import log 
 
 class Startup:
     
@@ -21,7 +20,7 @@ class Startup:
         for instruction in startupInstructions:
             self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
             time.sleep(0.3)
-        log.info('Startup Procedure applied ....!')
+        print('Startup Procedure applied ....!')
         print(self.mcp.mcpRead(SlaveAddress=0x6c, data=[0x2F]))
         
 class StartupAzComp:
@@ -43,7 +42,7 @@ class StartupAzComp:
         for instruction in startupInstructions:
             self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
             time.sleep(0.3)
-        log.info('StartupAzComp Procedure applied ....!')
+        print('StartupAzComp Procedure applied ....!')
         print(self.mcp.mcpRead(SlaveAddress=0x6c, data=[0x2F]))
         
         

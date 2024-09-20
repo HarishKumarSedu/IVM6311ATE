@@ -1,6 +1,5 @@
 
 import time 
-from IvmDriver.logger import log 
 
 class EnableAnalogTestPoint:
     
@@ -16,4 +15,4 @@ class EnableAnalogTestPoint:
         for instruction in EnableAnalogTestPointInstructions:
             self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
             time.sleep(0.3)
-        log.info('Enable Analog TestPoint Procedure applied ....!')
+        print('Enable Analog TestPoint Procedure applied ....!')
