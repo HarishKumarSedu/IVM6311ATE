@@ -56,7 +56,7 @@ class BandGapCurve:
     
     def measure_BandGap(self):
         try:
-            for temp in tqdm([80]):
+            for temp in tqdm([20,40,60,80]):
                 setCode = []
                 BandGapValue = []
                 self.chamber.set_temp(temp=temp)
@@ -74,10 +74,10 @@ class BandGapCurve:
                     setCode.append(i)
                     BandGapValue.append(self.bandgap_values())
                 #Reset the Chip and Vddio powersupply
-                if not os.path.exists(Path('measurements/BandGapCurve1/Device1')):
-                    os.makedirs(Path('measurements/BandGapCurve1/Device1'))
+                if not os.path.exists(Path('measurements/BandGapCurve2/Device2')):
+                    os.makedirs(Path('measurements/BandGapCurve2/Device2'))
                 data = pd.DataFrame({'CurveSetCode':setCode,'BandGapValue':BandGapValue})
-                data.to_csv(f'measurements/BandGapCurve1/Device1/BandgapCurve_{temp}C.csv')
+                data.to_csv(f'measurements/BandGapCurve2/Device2/BandgapCurve_{temp}C.csv')
         except KeyboardInterrupt:
             pass
 
