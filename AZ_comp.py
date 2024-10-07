@@ -243,39 +243,12 @@ def AZcomp_DFT(data=pd.DataFrame({}),test_name=''):
             print(f'force_signal  > {force_signal_instruction}')
             force_signal(force_signal_instruction=force_signal_instruction)
             
-
-        # if re.match('forceap', instruction):
-        #     force_signal = parser.extract_Force_Instruction_AP(instruction)
-        #     print(f'force_signal  > {force_signal}')
-        #     lim = extract_last_n_values(force_signal, len(force_signal)-4)
-        #     force_ap(force_signal, lim[0])
-
-
-        # if re.match('compsweepap', instruction):
-        #     sweep_signal = parser.extract_Sweep_Instruction_AP(instruction)
-        #     print(f'sweeep_signal  > {sweep_signal}')
-        #     converted_dict = convert_dict_values(sweep_signal)
-        #     print('#############################################', converted_dict)
-        #     lim = extract_last_n_values(converted_dict, len(converted_dict)-1)
-        #     sweep_ap(lim[0], lim[1], lim[2])
-
         if re.match('measure',instruction):
             print(instruction)
             measure_signal = parser.extract_Measure__Instruction(instruction)
             print(f'measure_signal  > {measure_signal}')
             measure_value_check(measure_signal=measure_signal,typical=typical)
 
-
-# def force_ap(force_signal:{}, start_value):
-#         dc_mode = force_signal.get('AP_mode')
-#         if re.search('dc', dc_mode):
-#             print('DC_mode')
-            # mcp2317.Switch(device_addr=0x23,row=8, col=5, Enable=True)
-            # path = os.path.join(os.getcwd() + "PA_template" + AP_file_DC)
-            # ap = Audio_precision.AP555(mode = 'BenchMode', fullpath=path)
-            # ap.Configure_Generator(True, gen_value , Freq=1000, Waveform = 'Sine, Var Phase')
-            # ap.FilterSel(HP_Mode='Elliptic', LP_Mode='Elliptic', Weighting="None")
-            # ap.Enable_Generator(True)
             
 if __name__ == '__main__':
     meter.outp_ON(channel=1)
