@@ -126,6 +126,7 @@ class dpo_2014B:
         app = Application(backend='win32').connect(title='OpenChoice Desktop')
         dlg = app.window(title='OpenChoice Desktop')
         dlg.set_focus()
+        time.sleep(2) 
         send_keys('^g') 
         time.sleep(2) 
         send_keys('^s')

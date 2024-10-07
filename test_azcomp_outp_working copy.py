@@ -16,39 +16,11 @@ print(path)
 ap = AP555(mode = 'BenchMode', fullpath=path)
 AZ_offset = ap.Read_meter(3,1)
 print("Comparator's offset is:", AZ_offset)
-print(type(AZ_offset))
 DC_offset2 = 1.8
 ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= 1.8)
 ap.Enable_Generator(True)
 AZ_offset_array = []
 
-
-#################################################  deleted intrinsic offset
-if abs(AZ_offset) > 0:
-    while -0.00025< AZ_offset > 0.00025:
-        DC_offset2 = DC_offset2 - 0.00025
-        print("DC offset is:", DC_offset2)
-        sleep(1)
-        ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2)
-        sleep(1)
-        AZ_offset = ap.Read_meter(3,1)
-        print("Comparator's offset is:", AZ_offset)
-DC_offset2_correct1 = DC_offset2
-print("DC_offset_correct:", DC_offset2_correct1)
-ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2_correct1)
-
-if AZ_offset < 0:
-    while abs(AZ_offset) > 0.00025:
-        DC_offset2 = DC_offset2 + 0.00025
-        print("DC offset is:", DC_offset2)
-        sleep(1)
-        ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2)
-        sleep(1)
-        AZ_offset = ap.Read_meter(3,1)
-        print("Comparator's offset is:", AZ_offset)
-DC_offset2_correct1 = DC_offset2
-print("DC_offset_correct:", DC_offset2_correct1)
-ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2_correct1)
 
 ####Setup the device
 mcp.mcpWrite(SlaveAddress=0x6C,data=[0xFE,0x01])
@@ -61,27 +33,28 @@ mcp.mcpWrite(SlaveAddress=0x6C,data=[0xE1,0x1F])
 scope.set_trigger__mode(mode='NORM')
 scope.set_HScale()
 scope.set_Channel__VScale(scale=0.5)
-DC_offset2_correct2 = DC_offset2_correct1
-
-print("The correct comparator offset is:", DC_offset2_correct2)
-i = 1
+DC_offset2_correct2 = 1.8
+i = 0
 ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2_correct2)
 
 
 ####move the AP offset and check the comparator of AZ_comp
 while DC_offset2_correct2 < 1.805:
     i = i+1
+    print(i)
     DC_offset2_correct2 = DC_offset2_correct2 + 0.00025
-    sleep(1)
+    print(DC_offset2_correct2)
     ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2_correct2)
     mcp.mcpWrite(SlaveAddress=0x6C,data=[0xE4,0x01])
+    sleep(1)
     scope.openchoice_screenshot(file_path = f'C:\\Users\\invlab\\Documents\\IVM6311ATE\\IVM6311ATE\\AZ_comp_DFT{i}.png')
     AZ_offset = ap.Read_meter(3,1)
     print("AZ_offset is:", AZ_offset)
     AZ_offset_array.append(AZ_offset)
 
-ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2_correct1)
-DC_offset2_correct2 = DC_offset2_correct1
+ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= 1.8)
+DC_offset2_correct2 = 1.8
+i=1
 
 while DC_offset2_correct2 > 1.795:
     i = i+1
@@ -89,11 +62,12 @@ while DC_offset2_correct2 > 1.795:
     sleep(2)
     ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2)
     mcp.mcpWrite(SlaveAddress=0x6C,data=[0xE4,0x01])
+    sleep(1)
     scope.openchoice_screenshot(file_path = f'C:\\Users\\invlab\\Documents\\IVM6311ATE\\IVM6311ATE\\AZ_comp_DFT{i}.png')
     AZ_offset = ap.Read_meter(3,1)
     AZ_offset_array.append(AZ_offset)
 
-ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= DC_offset2_correct1)
+ap.Configure_Generator(False,Level1=-60, Level2=-60  , Freq=1000, Waveform = 'Sine, Var Phase', DC_offset1= 1.8, DC_offset2= 1.8)
 
 
 
