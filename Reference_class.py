@@ -15,7 +15,7 @@ from pathlib import Path
 from box import ConfigBox
 from box.exceptions import BoxValueError
 
-class AZ_comp:
+class Reference:
 
     ############################ initialization
     def __init__(self):
@@ -26,7 +26,9 @@ class AZ_comp:
         self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
+        output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
         self.parser = Parser()
+        self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.slave_address = 0x6c
 
     def typical_value_clean(self,value: str):
@@ -91,7 +93,6 @@ class AZ_comp:
         numeric_values = [v for v in data.values() if isinstance(v, (int, float))]
         last_n_values = numeric_values[-n:]
         if len(last_n_values) < n:
-            print(f"Non ci sono abbastanza valori numerici nel dizionario per estrarre {n} elementi.")
             return None
         return last_n_values
 
@@ -104,8 +105,7 @@ class AZ_comp:
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
-                self.meter.outp_ON(channel=4)
-                #self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True) 
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True) 
 
     def write_device(self,data: {}):
         device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16)])[0]
@@ -126,8 +126,7 @@ class AZ_comp:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
-                self.meter.outp_OFF(channel=4)
-                #self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -135,10 +134,9 @@ class AZ_comp:
             measure_values = None
             print(signal_Unit)
             if re.search('voltage', signal_Unit):
-                meter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
                 sleep(0.1)
-                measure_values = meter.meas_V()
+                measure_values = self.voltmeter.meas_V()
                 print(f' value : {measure_values}')
 
             if re.search('current', signal_Unit):
@@ -178,26 +176,67 @@ class AZ_comp:
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
         typical = self.typical_value_clean(data[test_name].loc[6])
-        print(f'Typical value : {typical}')
-        test_type = data[test_name].loc[2]
-        print(test_type)
-
+        print(typical)
         for instruction in instructions:
-            print(instruction)
-            if re.match('enable', instruction.lower()):
-                self.execute_Enable_Ana_Testpoint()
-            if re.match('measure', instruction.lower()):
-                measure_signal = self.convert_dict_values(data[test_name].loc[4])
+            instruction = instruction.lower()
+            # print(instruction)
+            
+            if re.match('run', instruction):
+                if re.findall('startup', instruction):
+                    print('Startup Procedure')
+                    self.execute_startup()
+                if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
+                    print('Enable Ana TestPoint Procedure')
+                    self.execute_Enable_Ana_Testpoint()
+
+            if re.match('0x',instruction):
+                reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
+                # print(reg_data)
+                self.write_device(reg_data)
+            if re.match('force', instruction):
+                force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
+                print(f'Force Signal : {force_signal_instruction}')
+                self.force_signal(force_signal_instruction)
+            if re.match('measure', instruction):
+                measure_signal = self.parser.extract_Measure__Instruction(instruction)
+                print(f'Measure Signal : {measure_signal}')
                 self.measure_value_check(measure_signal=measure_signal, typical=typical)
-            if re.match('force', instruction.lower()):
-                force_signal_instruction = self.convert_dict_values(data[test_name].loc[5])
-                self.force_signal(force_signal_instruction=force_signal_instruction)
 
 
-    def run(self):
-        self.AZcomp_DFT(data=self.data)
+if __name__ == '__main__':
+    ref = Reference()
+    output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+    output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
+    ref.meter.outp_ON(channel=4)
+    ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Reference')
+    tests = ref.read_yaml(path_to_yaml=Path('Tests.yaml'))
+    print(tests)
+    try:
+        for test in tests.Reference:
+            print(f'............ {test}')
+            ref.AZcomp_DFT(ref_data, test)
+    except  TypeError as e:
+        print(f'Entered in Exception loop :> {e}')
+        traceback.print_exc()
+        pass 
+    except  KeyboardInterrupt:
+        for i in range (0x20,0x28):
+            ref.mcp2317.Switch_reset(device_addr=i)
+            ref.supplies.outp_OFF(channel=1)
+            sleep(0.5)
+            ref.supplies.outp_OFF(channel=2)
+    except  Exception as e:
+        print(f'Entered in Exception loop :> {e}')
+        traceback.print_exc()
+        for i in range (0x20,0x28):
+            ref.mcp2317.Switch_reset(device_addr=i)
+            ref.supplies.outp_OFF(channel=1)
+            sleep(0.5)
+            ref.supplies.outp_OFF(channel=2)
 
-if __name__ == "__main__":
-    az_comp = AZ_comp()
-    az_comp.run()
+    ref.supplies.outp_OFF(channel=1)
+    ref.supplies.outp_OFF(channel=2)
+    ref.meter.outp_OFF(channel=1)
+    ref.meter.outp_OFF(channel=4)
+    # finally:
 

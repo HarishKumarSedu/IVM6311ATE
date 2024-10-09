@@ -92,7 +92,6 @@ class AZ_comp:
         numeric_values = [v for v in data.values() if isinstance(v, (int, float))]
         last_n_values = numeric_values[-n:]
         if len(last_n_values) < n:
-            print(f"Non ci sono abbastanza valori numerici nel dizionario per estrarre {n} elementi.")
             return None
         return last_n_values
 
@@ -179,7 +178,7 @@ class AZ_comp:
         print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
-            print(instruction)
+            # print(instruction)
             
             if re.match('run', instruction):
                 if re.findall('startup', instruction):
@@ -191,7 +190,7 @@ class AZ_comp:
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                print(reg_data)
+                # print(reg_data)
                 self.write_device(reg_data)
             if re.match('force', instruction):
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
