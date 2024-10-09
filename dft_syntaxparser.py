@@ -112,6 +112,8 @@ class Parser:
            return register
        # extract the trim sweep pattren 
        pattern = re.compile(r"\b(0[xX]+[0-9a-fA-F]+)+\[(.*?)\]")
+       if re.match('trim__',instruction):
+           instruction = instruction.replace('trim__','')
        instruction = re.findall(pattern, instruction)[0]
        return register_format(instruction=instruction)
    
@@ -729,6 +731,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    # print(parser.extract_TrimSweep__Instruction('trimsweep - 0xb0[7:4] "select code which sets atest voltage as close as possible to target"'))
-    print(parser.value_clean('2ma'))
+    print(parser.extract_TrimSweep__Instruction('Trim__0xB0[7:4] "Select code which sets ATEST voltage as close as possible to target"'))
+    # print(parser.value_clean('2ma'))
     

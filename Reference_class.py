@@ -19,14 +19,14 @@ class Reference:
 
     ############################ initialization
     def __init__(self):
-        self.data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
+        self.data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
         self.procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
         self.mcp = MCP2221()
         self.mcp2317 = MCP2317(mcp=self.mcp)
         self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
-        output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+        self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.slave_address = 0x6c
@@ -118,7 +118,7 @@ class Reference:
             print(f'Data is out of width')
 
     def execute_Enable_Ana_Testpoint(self):
-        startup_procedure = self.procedures['Enable_Ana_Testpoint_AZ_comp'].loc[0].split('\n')
+        startup_procedure = self.procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
         for instruction in startup_procedure:
             instruction = instruction.lower()
             if re.match('0x', instruction):
@@ -172,20 +172,26 @@ class Reference:
                     self.ps_gpib.outp_ON(channel=2)
             force_signal_instruction = None
 
-    def AZcomp_DFT(self,data=pd.DataFrame({}), test_name=''):
+    def sweep_trim_bit(self,reg_trim,LSB_trim,MSB_trim):
+        i = 0
+        lenght = MSB_trim - LSB_trim
+        for i in range(lenght):
+
+
+    def ref_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
         typical = self.typical_value_clean(data[test_name].loc[6])
         print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
-            # print(instruction)
+            print(instruction)
             
             if re.match('run', instruction):
                 if re.findall('startup', instruction):
                     print('Startup Procedure')
                     self.execute_startup()
-                if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
+                if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
                     print('Enable Ana TestPoint Procedure')
                     self.execute_Enable_Ana_Testpoint()
 
@@ -201,20 +207,28 @@ class Reference:
                 measure_signal = self.parser.extract_Measure__Instruction(instruction)
                 print(f'Measure Signal : {measure_signal}')
                 self.measure_value_check(measure_signal=measure_signal, typical=typical)
-
+            if re.match('trim', instruction):
+                reg_instr = self.parser.extract_TrimSweep__Instruction(instruction)
+                print(f'Trim instruction : {reg_instr}')
+                print(type(reg_instr))
+                reg_trim = reg_instr.get['RegAddr']
+                LSB_trim = reg_instr.get['LSB']
+                MSB_trim = reg_instr.get['MSB']
+                input()
+                self.sweep_trim_bit(reg_trim,LSB_trim,MSB_trim)
 
 if __name__ == '__main__':
     ref = Reference()
-    output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
+    # output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+    ref.output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
     ref.meter.outp_ON(channel=4)
-    ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Reference')
+    ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
     tests = ref.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
     try:
-        for test in tests.Reference:
+        for test in tests.Trim:
             print(f'............ {test}')
-            ref.AZcomp_DFT(ref_data, test)
+            ref.ref_DFT(ref_data, test)
     except  TypeError as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
