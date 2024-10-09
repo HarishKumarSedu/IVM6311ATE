@@ -137,8 +137,8 @@ def execute_startup():
             write_device(reg_data)
         if re.match('Force__SDWN__1.8V'.lower(), instruction):
             print('Force 1.8V on SDWN')
-            # meter.outp_ON(channel=4)
-            mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=True)
+            meter.outp_ON(channel=4)
+            #mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=True)
 
 def write_device(data:{}):
     device_data = mcp.mcpRead(SlaveAddress=slave_address,data=[int(data.get('RegAddr'),16)])[0]

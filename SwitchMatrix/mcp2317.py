@@ -2,11 +2,13 @@
 from typing import Union
 import warnings
 import time 
-from SwitchMatrix.mcp2221 import MCP2221
+import sys
+# from mcp2221 import MCP2221
 
 
 class MCP2317:
     def __init__(self, mcp='') -> None:
+
         self.IODIRA = 0x00 # Bank GPIO congurations :  1 - InPut , 2 - Output ; default all Bank GPIOs are inputs 
         self.IODIRB = 0x01 
         self.GPIOA  = 0x12 # GPIO BANK output set 
@@ -78,12 +80,14 @@ class MCP2317:
             self.mcp2221.mcpWrite(device_addr, [self.GPIOB,0x00]) # configure all the bank B gpios are as outputs 
                 
 if __name__=='__main__':
-    mcp=MCP2221()
-    mcp2317 = MCP2317(mcp=mcp)
+    mcp = MCP2221()  
+    mcp2317 = MCP2317(mcp=mcp)  
     time.sleep(1)
     mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=False)
-    mcp2317.Switch(device_addr=0x20,row=1, col=2, Enable=True)
-    mcp2317.Switch(device_addr=0x21,row=3, col=3, Enable=True)
+    mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=False)
+    mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=False)
+    # mcp2317.Switch(device_addr=0x20,row=1, col=2, Enable=True)
+    # mcp2317.Switch(device_addr=0x21,row=3, col=3, Enable=True)
     # mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=False)
     # time.sleep(2)
     # mcp2317.Switch(row=4, col=1, Enable=False)
