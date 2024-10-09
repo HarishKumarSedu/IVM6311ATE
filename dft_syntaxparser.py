@@ -163,19 +163,26 @@ class Parser:
             return register
 
         if 'copy__' in instruction.lower():
-            if len(regs := [re.findall(pattern1, i)[0] for i in instruction.split('__')[1:] if re.match(pattern1, i)]) == 2:
-                if copyReg := register_format(regs[0]):
-                    if pasteReg := register_format(regs[1]):
-                        register={
-                            "copyReg":copyReg,
-                            "pasteReg":pasteReg,
-                        }
+            regs = [re.findall(pattern1, i)[0] for i in instruction.split('__')[1:] if re.match(pattern1, i)]
+    
+        if len(regs) == 2:
+            copyReg = register_format(regs[0])  # Assegna il primo registro
+            if copyReg:  # Verifica se copyReg è valido
+                pasteReg = register_format(regs[1])  # Assegna il secondo registro
+                if pasteReg:  # Verifica se pasteReg è valido
+                    register = {  # Crea il dizionario solo se entrambi i registri sono validi
+                        "copyReg": copyReg,
+                        "pasteReg": pasteReg,
+                    }
+                else:
+                    register = {}  # Se pasteReg non è valido, inizializza a un dizionario vuoto
             else:
-                register =register
+                register = {}  # Se copyReg non è valido, inizializza a un dizionario vuoto
         else:
-            register = register
+            register = {}  # Se non ci sono esattamente 2 registri, inizializza a un dizionario vuoto
 
-        return register
+        return register  # Restituisci il dizionario register
+    
     # extract_CopyRegister__Instruction('Copy__0xCB[7:4]__0xCC[3:0]')
     def extract_RestoreRegister__Instruction(self,instruction: str)->dict:
         # Remove the comments from the register
@@ -226,18 +233,26 @@ class Parser:
             return register
 
         if 'restore__' in instruction.lower():
-            if len(regs := [ re.findall(pattern1, i)[0] if re.match(pattern1, i) else i for i in instruction.split('__')[1:]  ] ) == 2:
-                if restoreReg := register_format(regs[1]):
-                    register={
-                            "restoreReg":restoreReg,
-                            "var":regs[0],
-                        }
+            # Estrai i registri dall'istruzione
+            regs = [re.findall(pattern1, i)[0] if re.match(pattern1, i) else i for i in instruction.split('__')[1:]]
+            
+            # Controlla se ci sono esattamente 2 registri trovati
+            if len(regs) == 2:
+                restoreReg = register_format(regs[1])  # Assegna il secondo registro
+                if restoreReg:  # Verifica se restoreReg è valido
+                    register = {  # Crea il dizionario solo se restoreReg è valido
+                        "restoreReg": restoreReg,
+                        "var": regs[0],  # Assegna il primo registro
+                    }
+                else:
+                    register = {}  # Se restoreReg non è valido, inizializza a un dizionario vuoto
             else:
-                register =register
+                register = {}  # Se non ci sono esattamente 2 registri, inizializza a un dizionario vuoto
         else:
-            register = register
+            register = {}  # Se l'istruzione non contiene "restore__", inizializza a un dizionario vuoto
 
-        return register
+        return register  # Restituisci il dizionario register
+
     # extract_RestoreRegister__Instruction('Restore__varCB__0xCB "int offset idle"')
 
     def extract_SaveRegister__Instruction(self,instruction: str)->dict:
@@ -289,18 +304,26 @@ class Parser:
             return register
 
         if 'save__' in instruction.lower():
-            if len(regs := [ re.findall(pattern1, i)[0] if re.match(pattern1, i) else i for i in instruction.split('__')[1:]  ] ) == 2:
-                if saveReg := register_format(regs[0]):
-                    register={
-                            "saveReg":saveReg,
-                            "var":regs[1],
-                        }
+            # Estrai i registri dall'istruzione
+            regs = [re.findall(pattern1, i)[0] if re.match(pattern1, i) else i for i in instruction.split('__')[1:]]
+            
+            # Controlla se ci sono esattamente 2 registri trovati
+            if len(regs) == 2:
+                saveReg = register_format(regs[0])  # Assegna il primo registro
+                if saveReg:  # Verifica se saveReg è valido
+                    register = {  # Crea il dizionario solo se saveReg è valido
+                        "saveReg": saveReg,
+                        "var": regs[1],  # Assegna il secondo registro
+                    }
+                else:
+                    register = {}  # Se saveReg non è valido, inizializza a un dizionario vuoto
             else:
-                register =register
+                register = {}  # Se non ci sono esattamente 2 registri, inizializza a un dizionario vuoto
         else:
-            register = register
+            register = {}  # Se l'istruzione non contiene "save__", inizializza a un dizionario vuoto
 
-        return register
+        return register  # Restituisci il dizionario register
+
     #extract_SaveRegister__Instruction('Save__0xCB__varCB "int offset idle"')
     
     def extract_Force__Instruction(self,instruction: str):
@@ -337,67 +360,72 @@ class Parser:
 
             return value, unit
 
-        # match the small or capital letter force key word
-        if re.match('[Force]|[force]', instruction) and re.search('__', instruction) :
+        # Controlla se l'istruzione contiene la parola chiave "force" (in minuscolo o maiuscolo)
+        if re.match(r'[Ff]orce', instruction) and re.search('__', instruction):
             signal = instruction
-            # signal = re.findall(re.compile('([A-Za-z0-9\.\-]+)'), Instruction)[1:] # find the force signal and with the value 
-            #remove the comments if there are any comments 
-            if re.search(r"\"(.*?)\"",signal):
-                signal = re.sub(r"\"(.*?)\"",'',signal)
+            
+            # Rimuovi i commenti se presenti
+            signal = re.sub(r'"(.*?)"', '', signal)
 
-            signal = signal.split('__')[1:] # find the force signal and with the value 
-            #check the signal and value, array length 
-            # if the instruction has signal and the value array length must the 2 
-            signal_length = len(signal)
+            # Estrai il segnale e il valore
+            signal = signal.split('__')[1:]  # Trova il segnale di forza e il valore
+            signal_length = len(signal)  # Controlla la lunghezza dell'array del segnale e del valore
+
             if signal_length == 2:
                 ########################
-                # for force instruction length 2 
-                # @pattren 'Force_Current__SW__400mA'
+                # Per le istruzioni di forza di lunghezza 2
+                # @pattern 'Force_Current__SW__400mA'
                 ########################
 
-                signal_name = signal[0]
-                    #check the signal unit and extract the number 
+                signal_name = signal[0]  # Nome del segnale
+                
+                # Controlla l'unità del segnale ed estrae il numero
                 unit = delist(re.findall('[A-Za-z]+', signal[1].lower()))
-                if  value := float(delist(re.findall('[0-9\.\-]+', signal[1]))) :
-                    # check the volatage or current 
-                    value, unit = value_unit(value,unit)
-                # else check for the open or close 
-
-                elif value := delist(re.findall('OPEN', signal[1])):
-                    unit = None 
-                elif value := delist(re.findall('CLOSE', signal[1])):
-                        unit = None
+                value_str = delist(re.findall('[0-9\.\-]+', signal[1]))
+                
+                if value_str:
+                    value = float(value_str)  # Converte il valore in float
+                    value, unit = value_unit(value, unit)  # Verifica se è tensione o corrente
+                
+                # Controlla per "OPEN" o "CLOSE"
+                elif re.search('OPEN', signal[1]):
+                    value, unit = None, None
+                elif re.search('CLOSE', signal[1]):
+                    value, unit = None, None
 
                 force_signal = {
-                'Signal' : signal_name,
-                'Value'  : value ,
-                'Unit'   : unit
+                    'Signal': signal_name,
+                    'Value': value,
+                    'Unit': unit
                 }
 
             elif signal_length == 3:
                 ########################
-                # for force instruction length 2 
-                # @pattren 'Force_Current__SW__400mA'
+                # Per le istruzioni di forza di lunghezza 3
+                # @pattern 'Force_Current__SW__400mA'
                 ########################
-                signal_name = signal[1]
-                #check the signal unit and extract the number 
-                unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
-                if  value := float(delist(re.findall('[0-9\.\-]+', signal[2]))) :
-                    # check the volatage or current 
-                    value, unit = value_unit(value,unit)
 
-                # else check for the open or close 
-                elif value := delist(re.findall('OPEN', signal[1])):
-                    unit = None 
-                elif value := delist(re.findall('CLOSE', signal[1])):
-                    unit = None 
+                signal_name = signal[1]  # Nome del segnale
+                
+                # Controlla l'unità del segnale ed estrae il numero
+                unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
+                value_str = delist(re.findall('[0-9\.\-]+', signal[2]))
+
+                if value_str:
+                    value = float(value_str)  # Converte il valore in float
+                    value, unit = value_unit(value, unit)  # Verifica se è tensione o corrente
+                
+                # Controlla per "OPEN" o "CLOSE"
+                elif re.search('OPEN', signal[1]):
+                    value, unit = None, None
+                elif re.search('CLOSE', signal[1]):
+                    value, unit = None, None
 
                 force_signal = {
-                    'Signal' : signal_name,
-                    'Value'  : value ,
-                    'Unit'   : unit
+                    'Signal': signal_name,
+                    'Value': value,
+                    'Unit': unit
                 }
-
 
         return force_signal    
         # extract_Force__Instruction(Instruction = 'Force_Current__SW__400mA')
@@ -440,77 +468,81 @@ class Parser:
                 unit = unit.capitalize()
 
             return value, unit
-
-        # match the small or capital letter force key word
-        if re.match('[ForceAP]|[forceAP]', instruction) and re.search('__', instruction) :
+        # Controlla se l'istruzione contiene la parola chiave "force" (in minuscolo o maiuscolo)
+        if re.match(r'[Ff]orce[Aa][Pp]', instruction) and re.search('__', instruction):
             signal = instruction
-            # signal = re.findall(re.compile('([A-Za-z0-9\.\-]+)'), Instruction)[1:] # find the force signal and with the value 
-            #remove the comments if there are any comments 
-            if re.search(r"\"(.*?)\"",signal):
-                signal = re.sub(r"\"(.*?)\"",'',signal)
+            
+            # Rimuovi i commenti se presenti
+            signal = re.sub(r'"(.*?)"', '', signal)
 
-            signal = signal.split('__')[1:] # find the force signal and with the value 
-            #check the signal and value, array length 
-            # if the instruction has signal and the value array length must the 2 
-            signal_length = len(signal)
+            # Estrai il segnale e il valore
+            signal = signal.split('__')[1:]  # Trova il segnale di forza e il valore
+            signal_length = len(signal)  # Controlla la lunghezza dell'array del segnale e del valore
+
             if signal_length == 2:
                 ########################
-                # for force instruction length 2 
-                # @pattren 'Force_Current__SW__400mA'
+                # Per le istruzioni di forza di lunghezza 2
+                # @pattern 'Force_Current__SW__400mA'
                 ########################
 
-                AP_mode = signal[0]
-                signal_name = signal[1]
-                    #check the signal unit and extract the number 
+                AP_mode = signal[0]  # Modalità AP
+                signal_name = signal[1]  # Nome del segnale
+                
+                # Controlla l'unità del segnale ed estrae il numero
                 unit = delist(re.findall('[A-Za-z]+', signal[1].lower()))
-                if  value := float(delist(re.findall('[0-9\.\-]+', signal[1]))) :
-                    # check the volatage or current 
-                    value, unit = value_unit(value,unit)
-                # else check for the open or close 
-
-                elif value := delist(re.findall('OPEN', signal[1])):
-                    unit = None 
-                elif value := delist(re.findall('CLOSE', signal[1])):
-                        unit = None
-
-                force_signal = {
-                'AP_mode': AP_mode,
-                'Signal' : signal_name,
-                'Value'  : value ,
-                'Unit'   : unit
-                }
-
-
-            elif signal_length == 3:
-                ########################
-                # for force instruction length 2 
-                # @pattren 'Force_Current__SW__400mA'
-                ########################
-                AP_mode = signal[0]
-                signal_name = signal[1]
-                #check the signal unit and extract the number 
-                unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
-                if  value := float(delist(re.findall('[0-9\.\-]+', signal[2]))) :
-                    # check the volatage or current 
-                    value, unit = value_unit(value,unit)
-
-                # else check for the open or close 
-                elif value := delist(re.findall('OPEN', signal[1])):
-                    unit = None 
-                elif value := delist(re.findall('CLOSE', signal[1])):
-                    unit = None 
+                value_str = delist(re.findall('[0-9\.\-]+', signal[1]))
+                
+                if value_str:
+                    value = float(value_str)  # Converte il valore in float
+                    value, unit = value_unit(value, unit)  # Verifica se è tensione o corrente
+                
+                # Controlla per "OPEN" o "CLOSE"
+                elif re.search('OPEN', signal[1]):
+                    value, unit = None, None
+                elif re.search('CLOSE', signal[1]):
+                    value, unit = None, None
 
                 force_signal = {
                     'AP_mode': AP_mode,
-                    'Signal' : signal_name,
-                    'Value'  : value ,
-                    'Unit'   : unit
+                    'Signal': signal_name,
+                    'Value': value,
+                    'Unit': unit
                 }
 
+            elif signal_length == 3:
+                ########################
+                # Per le istruzioni di forza di lunghezza 3
+                # @pattern 'Force_Current__SW__400mA'
+                ########################
+
+                AP_mode = signal[0]  # Modalità AP
+                signal_name = signal[1]  # Nome del segnale
+                
+                # Controlla l'unità del segnale ed estrae il numero
+                unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
+                value_str = delist(re.findall('[0-9\.\-]+', signal[2]))
+
+                if value_str:
+                    value = float(value_str)  # Converte il valore in float
+                    value, unit = value_unit(value, unit)  # Verifica se è tensione o corrente
+                
+                # Controlla per "OPEN" o "CLOSE"
+                elif re.search('OPEN', signal[1]):
+                    value, unit = None, None
+                elif re.search('CLOSE', signal[1]):
+                    value, unit = None, None
+
+                force_signal = {
+                    'AP_mode': AP_mode,
+                    'Signal': signal_name,
+                    'Value': value,
+                    'Unit': unit
+                }
 
             print(force_signal)
 
-        return force_signal    
+        return force_signal
+
     
     def extract_Sweep_Instruction_AP(self,instruction: str):
         
@@ -547,80 +579,85 @@ class Parser:
 
             return value, unit
 
-        # match the small or capital letter force key word
-        if re.match('[CompSweepAP]|[compsweepAP]', instruction) and re.search('__', instruction) :
+        # Controlla se l'istruzione contiene la parola chiave "CompSweepAP" (in minuscolo o maiuscolo)
+        if re.match(r'[Cc]omp[Ss]weep[Aa][Pp]', instruction) and re.search('__', instruction):
             signal = instruction
-            # signal = re.findall(re.compile('([A-Za-z0-9\.\-]+)'), Instruction)[1:] # find the force signal and with the value 
-            #remove the comments if there are any comments 
-            if re.search(r"\"(.*?)\"",signal):
-                signal = re.sub(r"\"(.*?)\"",'',signal)
+            
+            # Rimuovi i commenti se presenti
+            signal = re.sub(r'"(.*?)"', '', signal)
 
-            signal = signal.split('__')[1:] # find the force signal and with the value 
-            #check the signal and value, array length 
-            # if the instruction has signal and the value array length must the 2 
-            signal_length = len(signal)
+            # Estrai il segnale e il valore
+            signal = signal.split('__')[1:]  # Trova il segnale di forza e il valore
+            signal_length = len(signal)  # Controlla la lunghezza dell'array del segnale e del valore
             print(signal_length)
+
             if signal_length == 3:
                 ########################
-                # for force instruction length 2 
-                # @pattren 'Force_Current__SW__400mA'
+                # Per le istruzioni di forza di lunghezza 3
+                # @pattern 'CompSweep_Current__SW__400mA'
                 ########################
 
-                AP_mode = signal[0]
-                signal_name = signal[1]
-                    #check the signal unit and extract the number 
+                AP_mode = signal[0]  # Modalità AP
+                signal_name = signal[1]  # Nome del segnale
+                
+                # Controlla l'unità del segnale ed estrae il numero
                 unit = delist(re.findall('[A-Za-z]+', signal[1].lower()))
-                if  value := float(delist(re.findall('[0-9\.\-]+', signal[1]))) :
-                    # check the volatage or current 
-                    value, unit = value_unit(value,unit)
-                # else check for the open or close 
+                value_str = delist(re.findall('[0-9\.\-]+', signal[1]))
 
-                elif value := delist(re.findall('OPEN', signal[1])):
-                    unit = None 
-                elif value := delist(re.findall('CLOSE', signal[1])):
-                        unit = None
+                if value_str:
+                    value = float(value_str)  # Converte il valore in float
+                    value, unit = value_unit(value, unit)  # Verifica se è tensione o corrente
+                
+                # Controlla per "OPEN" o "CLOSE"
+                elif re.search('OPEN', signal[1]):
+                    value, unit = None, None
+                elif re.search('CLOSE', signal[1]):
+                    value, unit = None, None
 
                 force_signal = {
-                'Signal' : signal_name,
-                'Value'  : value ,
-                'Unit'   : unit
+                    'Signal': signal_name,
+                    'Value': value,
+                    'Unit': unit
                 }
 
                 print(force_signal)
 
             elif signal_length == 4:
                 ########################
-                # for force instruction length 2 
-                # @pattren 'Force_Current__SW__400mA'
+                # Per le istruzioni di forza di lunghezza 4
+                # @pattern 'CompSweep_Current__SW__400mA'
                 ########################
-                signal_name = signal[0]
-                startin_value = signal[1]
-                end_value = signal[2]
-                step_value = signal[3]
-                #check the signal unit and extract the number 
+                
+                signal_name = signal[0]  # Nome del segnale
+                start_value = signal[1]  # Valore iniziale
+                end_value = signal[2]  # Valore finale
+                step_value = signal[3]  # Passo
+                
+                # Controlla l'unità del segnale ed estrae il numero
                 unit = delist(re.findall('[A-Za-z]+', signal[2].lower()))
-                if  value := float(delist(re.findall('[0-9\.\-]+', signal[2]))) :
-                    # check the volatage or current 
-                    value, unit = value_unit(value,unit)
+                value_str = delist(re.findall('[0-9\.\-]+', signal[2]))
 
-                # else check for the open or close 
-                elif value := delist(re.findall('OPEN', signal[1])):
-                    unit = None 
-                elif value := delist(re.findall('CLOSE', signal[1])):
-                    unit = None 
+                if value_str:
+                    value = float(value_str)  # Converte il valore in float
+                    value, unit = value_unit(value, unit)  # Verifica se è tensione o corrente
+                
+                # Controlla per "OPEN" o "CLOSE"
+                elif re.search('OPEN', signal[1]):
+                    unit = None
+                elif re.search('CLOSE', signal[1]):
+                    unit = None
 
                 force_signal = {
-                    'Signal' : signal_name,
-                    'Start_Value'  : startin_value,
-                    'End_Value'   : end_value,
-                    'Step_value': step_value,
+                    'Signal': signal_name,
+                    'Start_Value': start_value,
+                    'End_Value': end_value,
+                    'Step_Value': step_value,
                 }
 
+                print(force_signal)
 
-            print(force_signal)
-        
+        return force_signal
 
-        return force_signal    
     
     def extract_Delay__Instruction(self,instruction: str):
         delay = 0

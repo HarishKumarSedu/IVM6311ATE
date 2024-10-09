@@ -2,6 +2,7 @@ import time
 import pyvisa as visa
 from pyvisa.attributes import *
 from pyvisa.constants import *
+from time import sleep
 
 
 class E3648:
@@ -55,6 +56,30 @@ class E3648:
     def outp_OFF(self,channel=1):
         self.supply.write(f'INSTrument:NSELect {str(channel)}')
         return self.supply.write('OUTPut:STATe OFF')
+    
+    class OutputControl:
+        def __init__(self, port='GPIB0::7::INSTR') -> None:
+            self.supply = E3648(port).supply  
+        
+        def output_on(self, channel1=1, channel2=2, voltage1=0.0, voltage2=0.0, current1=0.0, current2=0.0):
+            self.supply.write(f'INSTrument:NSELect {channel1}')
+            self.supply.write(f'VOLT {voltage1}')
+            sleep(1)
+            self.supply.write(f'INSTrument:NSELect {str(channel1)}')
+            self.supply.write(f'CURR {str(current1)}')
+            sleep(1)
+            self.supply.write(f'INSTrument:NSELect {channel2}')
+            self.supply.write(f'VOLT {voltage2}')
+            sleep(1)
+            self.supply.write(f'INSTrument:NSELect {str(channel2)}')
+            self.supply.write(f'CURR {str(current2)}')
+            sleep(1)
+            self.supply.write(f'INSTrument:NSELect {channel1}')
+            self.supply.write('OUTPut:STATe ON')
+            sleep(0.5)
+            self.supply.write(f'INSTrument:NSELect {channel2}')
+            self.supply.write('OUTPut:STATe ON')
+            
 
 if __name__ == '__main__':
     supply = E3648(port='GPIB0::5::INSTR')

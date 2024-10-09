@@ -2,7 +2,7 @@
 from typing import Union
 import warnings
 import time 
-# from mcp2221 import MCP2221
+from SwitchMatrix.mcp2221 import MCP2221
 
 
 class MCP2317:
