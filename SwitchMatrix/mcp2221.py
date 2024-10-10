@@ -72,4 +72,5 @@ if __name__ == '__main__':
 
     mcp=MCP2221()
     mcp.mcpWrite(SlaveAddress=0x6C,data=[00,0x0F])
-    print(mcp.mcpRead(SlaveAddress=0x6C,data=[00],Nobytes=1))
+    data = (mcp.mcpRead(SlaveAddress=0x6C,data=[00],Nobytes=1))
+    print(hex(data[0]))
