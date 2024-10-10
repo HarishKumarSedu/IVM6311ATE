@@ -8,6 +8,7 @@ from Instruments.KeySight_N670x import N670x
 from Instruments.Keysight_E3648 import E3648
 from SwitchMatrix.mcp2221 import MCP2221
 from SwitchMatrix.mcp2317 import MCP2317
+from Trimming import Trim
 import traceback
 import os
 import yaml
@@ -30,6 +31,7 @@ class Reference:
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.slave_address = 0x6c
+        self.trim = Trim(mcp=self.mcp)
 
     def typical_value_clean(self,value: str):
         value = (lambda value: value.replace(',', '.') if re.findall(',', value) else value)(value=value)
@@ -102,6 +104,7 @@ class Reference:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction) 
+                sleep(0.5)
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
@@ -172,31 +175,18 @@ class Reference:
                     self.ps_gpib.outp_ON(channel=2)
             force_signal_instruction = None
 
-    def sweep_trim_bit(self,reg_trim,lsb,msb):
-        reg_val = (self.mcp.mcpRead(SlaveAddress=self.slave_address,data=[reg_trim],Nobytes=1))
-        # Define lsb and msb
-        lsb = 4  # Least significant bit
-        msb = 7  # Most significant bit
-        # Calculate the number of iterations
-        n_iterations = msb - lsb + 1
-        # Create the mask for the range between lsb and msb
-        mask = 0
-        for i in range(lsb, msb + 1):
-            mask |= (1 << i)  # Set the bits between lsb and msb to 1
-        # Keep the bits outside the range (we save them to restore them later)
-        external_bits = reg_val & ~mask
-        # Loop to increment the internal bits
-        for increment in range(1 << n_iterations):  # Loop from 0 to 2^(msb-lsb+1) - 1
-            # Operation on the internal bits (increment)
-            internal_bits = (increment << lsb) & mask  # Apply the increment and limit it to the mask
-            print(bin(internal_bits))
-            # Combine the external bits with the modified internal bits
-            modified_register = external_bits | internal_bits
-            print(bin(modified_register))
-            # Print the results for each iteration
-            print(f"Iteration {increment}: Modified register = {modified_register:#04x}")
+    def trim_sweep(self,reg_trim,lsb,msb):
+        self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
+        trim_values,reg_value = self.trim.sweep_trim_bit(reg_trim,lsb,msb)
+        return trim_values,reg_value
 
-
+    def find_best_code(self, trim_values, reg_value, typical):
+        closest_value = self.trim.find_closest_value(trim_values,typical)
+        best_code = self.trim.find_best_code(trim_values, reg_value, typical)
+        print(closest_value)
+        print(hex(best_code))
+        return closest_value,best_code
+        
     def ref_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
@@ -230,20 +220,29 @@ class Reference:
                 reg_instr = self.parser.extract_TrimSweep__Instruction(instruction)
                 print(f'Trim instruction : {reg_instr}')
                 print(type(reg_instr))
-                reg_trim = reg_instr.get['RegAddr']
-                LSB_trim = reg_instr.get['LSB']
-                MSB_trim = reg_instr.get['MSB']
-                input()
-                self.sweep_trim_bit(reg_trim,LSB_trim,MSB_trim)
+                reg_trim = int(reg_instr.get('RegAddr'), 16)
+                LSB_trim = int(reg_instr.get('LSB'))
+                MSB_trim = int(reg_instr.get('MSB'))
+                trim_values,reg_value = self.trim_sweep(reg_trim,LSB_trim,MSB_trim)
+            if re.match('calculate', instruction):
+                closest_value,best_code =self.find_best_code(trim_values,reg_value,typical)
+                best_codes.append(best_code)
+                closest_values.append(closest_value)
+                print(best_codes)
+                print(closest_values)
+
 
 if __name__ == '__main__':
     ref = Reference()
-    # output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    ref.output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
+    output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+    output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
+    ref.meter.setVoltage(channel=4,voltage=1.8)
     ref.meter.outp_ON(channel=4)
     ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
     tests = ref.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
+    best_codes = []
+    closest_values = []
     try:
         for test in tests.Trim:
             print(f'............ {test}')
@@ -258,6 +257,7 @@ if __name__ == '__main__':
             ref.supplies.outp_OFF(channel=1)
             sleep(0.5)
             ref.supplies.outp_OFF(channel=2)
+            ref.meter.outp_OFF(channel = 4)
     except  Exception as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
@@ -266,10 +266,10 @@ if __name__ == '__main__':
             ref.supplies.outp_OFF(channel=1)
             sleep(0.5)
             ref.supplies.outp_OFF(channel=2)
+            ref.meter.outp_OFF(channel = 4)
 
     ref.supplies.outp_OFF(channel=1)
     ref.supplies.outp_OFF(channel=2)
     ref.meter.outp_OFF(channel=1)
     ref.meter.outp_OFF(channel=4)
-    # finally:
 

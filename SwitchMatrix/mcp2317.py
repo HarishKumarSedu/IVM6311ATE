@@ -61,9 +61,9 @@ class MCP2317:
                 RegBank_addr = self.GPIOA
             else:
                 RegBank_addr = self.GPIOB
-            self.mcp2221.mcpRead(device_addr, [RegBank_addr])
             time.sleep(0.2)
             if Enable:
+                # data = self.mcp2221.mcpRead(device_addr, [RegBank_addr])[0] # Read the register bank data
                 data = self.mcp2221.mcpRead(device_addr, [RegBank_addr])[0] # Read the register bank data
                 data = data | (1 << col-1)
                 self.mcp2221.mcpWrite(device_addr, [RegBank_addr,data])
