@@ -731,6 +731,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_TrimSweep__Instruction('Trim__0xB0[7:4] "Select code which sets ATEST voltage as close as possible to target"'))
+    print(parser.extract_TrimSweep__Instruction('Trim__Voltage__0xB0[7:4] "Select code which sets ATEST voltage as close as possible to target"'))
     # print(parser.value_clean('2ma'))
     

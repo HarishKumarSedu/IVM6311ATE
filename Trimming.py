@@ -1,6 +1,7 @@
 from SwitchMatrix.mcp2221 import MCP2221
 # from SwitchMatrix.mcp2317 import MCP2317
 from Instruments.Keysight_34461 import A34461
+from Instruments.DigitalScope import dpo_2014B
 import pandas as pd
 from time import sleep
 
@@ -9,43 +10,53 @@ class Trim:
     def __init__(self,mcp):
         self.meter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.mcp = mcp
+        self.scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
         # self.mcp2317 = MCP2317(mcp=self.mcp)
         self.slave_address = 0x6c
 
-    def sweep_trim_bit(self, reg_trim, lsb, msb):
-        # Leggi il valore del registro (assumendo che mcpRead restituisca una lista con un byte)
-        reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Prendi il primo elemento della lista
-        # Define lsb and msb
-        lsb = 4  # Least significant bit
-        msb = 7  # Most significant bit
-        modified_register=[]
-        # Calculate the number of iterations
-        n_iterations = msb - lsb + 1
-        # Create the mask for the range between lsb and msb
-        mask = 0
+    def sweep_trim_bit_voltage(self, reg_trim, lsb, msb):
+        # Read the value of the register (assuming mcpRead returns a list with one byte)
+        reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Take the first element of the list
+
+        modified_register = []
         trim_values = []
 
-        for i in range(lsb, msb + 1):
-            mask |= (1 << i)  # Set the bits between lsb and msb to 1
+        # Calculate the number of iterations
+        n_iterations = (1 << (msb - lsb + 1))  # This is 2^(msb-lsb+1)
 
-        # Keep the bits outside the range (we save them to restore them later)
-        external_bits = reg_val & ~mask  # 'reg_val' is now an integer
+        # Create the mask for the bits between lsb and msb
+        mask = ((1 << (msb - lsb + 1)) - 1) << lsb  # Create a mask that has bits 1 between lsb and msb
 
-        # Loop to increment the internal bits
-        for increment in range(1 << n_iterations):  # Loop from 0 to 2^(msb-lsb+1) - 1
+        # Keep the external bits (we save them to restore later)
+        external_bits = reg_val & ~mask  # Preserve the external bits (outside the masked range)
+
+        # Force the internal bits to 0 before starting
+        reg_val_zeroed = reg_val & ~mask  # Zero the bits between lsb and msb
+
+        # Write the register with the bits set to zero
+        self.mcp.mcpWrite(SlaveAddress=0x6C, data=[reg_trim, reg_val_zeroed])
+
+        # Loop to increment the bits between lsb and msb
+        for increment in range(n_iterations):  # Loop from 0 to 2^(msb-lsb+1) - 1
             # Operation on the internal bits (increment)
-            internal_bits = (increment << lsb) & mask  # Apply the increment and limit it to the mask
-            # print(bin(internal_bits))
+            internal_bits = (increment << lsb) & mask  # Increment only the bits between lsb and msb
+            
             # Combine the external bits with the modified internal bits
-            modified_register.append( external_bits | internal_bits)
-            # Print the results for each iteration
-            # print(f"Iteration {increment}: Modified register = {hex(modified_register[-1])}")
-            self.mcp.mcpWrite(SlaveAddress=0x6C, data=[0xB0, modified_register[-1]])
+            new_register_val = external_bits | internal_bits
+            modified_register.append(new_register_val)
+
+            # Write the new register value
+            self.mcp.mcpWrite(SlaveAddress=0x6C, data=[reg_trim, new_register_val])
+            
+            # Measure the trim value and add it to the list
             trim_value = self.meter.meas_V()
             trim_values.append(trim_value)
 
+            print(f"Increment: {increment}, Internal bits: {bin(internal_bits)}, Register: {hex(new_register_val)}")
+        
         print(trim_values)
-        return trim_values,modified_register
+        # Return the measured values and the modified registers
+        return trim_values, modified_register
     
     def find_closest_value(self,trim_values, target):
         # Use the min function to find the closest element
@@ -62,6 +73,60 @@ class Trim:
         # print(minimum)
         # print(hex(best_code))
         return  best_code # Return both the closest trim value and its corresponding modified register
+    
+    def sweep_trim_bit_freq(self, reg_trim, lsb, msb):
+        # Read the value of the register (assuming mcpRead returns a list with one byte)
+        reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Take the first element of the list
+        print(hex(reg_val))
+        # self.scope.set_autoSet()
+        self.scope.set_trigger__mode(mode='NORM')
+        self.scope.set_HScale('2E-6')
+        self.scope.set_Channel__VScale(scale=0.5)
+        modified_register = []
+        trim_values = []
+
+        # Calculate the number of iterations
+        n_iterations = (1 << (msb - lsb + 1))  # This is 2^(msb-lsb+1)
+
+        # Create the mask for the bits between lsb and msb
+        mask = ((1 << (msb - lsb + 1)) - 1) << lsb  # Create a mask that has bits 1 between lsb and msb
+
+        # Keep the external bits (we save them to restore later)
+        external_bits = reg_val & ~mask  # Preserve the external bits (outside the masked range)
+
+        # Force the internal bits to 0 before starting
+        reg_val_zeroed = reg_val & ~mask  # Zero the bits between lsb and msb
+
+        # Write the register with the bits set to zero
+        self.mcp.mcpWrite(SlaveAddress=0x6C, data=[reg_trim, reg_val_zeroed])
+
+        # Loop to increment the bits between lsb and msb
+        for increment in range(n_iterations):  # Loop from 0 to 2^(msb-lsb+1) - 1
+            # Operation on the internal bits (increment)
+            internal_bits = (increment << lsb) & mask  # Increment only the bits between lsb and msb
+            
+            # Combine the external bits with the modified internal bits
+            new_register_val = external_bits | internal_bits
+            modified_register.append(new_register_val)
+
+            # Write the new register value
+            self.mcp.mcpWrite(SlaveAddress=0x6C, data=[reg_trim, new_register_val])
+            
+            # Measure the trim value and add it to the list
+            i=0
+            freq = 0
+            # input('>>>>>>>>')
+            for i in range(0,20):
+                freq= freq + self.scope.meas_Freq()
+                sleep(0.01)
+            trim_values.append(freq/(i+1))
+
+            print(f"Increment: {increment}, Internal bits: {bin(internal_bits)}, Register: {hex(new_register_val)}, freq: {trim_values[-1]}")
+        print(trim_values)
+        # Return the measured values and the modified registers
+        return trim_values, modified_register
+    
+
 
 if __name__ == '__main__':
     mcp = MCP2221()
