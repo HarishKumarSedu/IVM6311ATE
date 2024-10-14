@@ -80,7 +80,7 @@ class Trim:
         print(hex(reg_val))
         # self.scope.set_autoSet()
         self.scope.set_trigger__mode(mode='NORM')
-        self.scope.set_HScale('2E-6')
+        self.scope.set_HScale('10E-6')
         self.scope.set_Channel__VScale(scale=0.5)
         modified_register = []
         trim_values = []
@@ -117,7 +117,7 @@ class Trim:
             freq = 0
             # input('>>>>>>>>')
             for i in range(0,20):
-                freq= freq + self.scope.meas_Freq()
+                freq= freq + self.scope.meas_Freq(Meas='MEAS2')
                 sleep(0.01)
             trim_values.append(freq/(i+1))
 

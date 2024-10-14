@@ -1,3 +1,5 @@
+
+
 import pandas as pd
 from dft_syntaxparser import Parser
 import re
@@ -33,22 +35,23 @@ class Reference:
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.slave_address = 0x6c
         self.trim = Trim(mcp=self.mcp)
-        # self.reg_trim = None
-        # self.LSB_trim = None
-        # self.MSB_trim = None
-        # self.trim_values = None
-        # self.reg_value = None
+        self.reg_trim = None
+        self.LSB_trim = None
+        self.MSB_trim = None
+        self.trim_values = None
+        self.reg_value = None
 
-    def typical_value_clean(self,value: str):
-        value = (lambda value: value.replace(',', '.') if re.findall(',', value) else value)(value=value)
-        value = re.sub(r'[a-zA-Z]+$', '', value)
-        value = (lambda value: float(value.replace('m', '')) * 10 ** -3 if isinstance(value, str) and re.findall('m', value) else value)(value=value)
-        value = (lambda value: float(value.replace('n', '')) * 10 ** -9 if isinstance(value, str) and re.findall('n', value) else value)(value=value)
-        value = (lambda value: float(value.replace('u', '')) * 10 ** -6 if isinstance(value, str) and re.findall('u', value) else value)(value=value)
-        value = (lambda value: float(value.replace('k', '')) * 10 ** 3 if isinstance(value, str) and re.findall('k', value) else value)(value=value)
-        value = (lambda value: float(value.replace('M', '')) * 10 ** 6 if isinstance(value, str) and re.findall('M', value) else value)(value=value)
-        value = (lambda value: float(value.replace('G', '')) * 10 ** 9 if isinstance(value, str) and re.findall('G', value) else value)(value=value)
-        if not isinstance(value, float):
+    def value_clean(self,value:str):
+        value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
+        # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
+        value = re.sub(r'[v|V]|[a|A]|[hZ|HZ]+$', '', value) # use it when you want to replace the any string in the number 
+        value = (lambda value : float(value.replace('m',''))*10**-3  if isinstance(value,str)    and re.findall('m',value) else value)(value=value)
+        value = (lambda value : float(value.replace('n',''))*10**-9  if isinstance(value,str)    and re.findall('n',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('u',''))*10**-6  if isinstance(value,str)    and re.findall('u',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('k',''))*10**3   if isinstance(value,str)    and re.findall('k',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('M',''))*10**6   if isinstance(value,str)    and re.findall('M',value)  else value)(value=value)
+        value = (lambda value : float(value.replace('G',''))*10**9   if isinstance(value,str)    and re.findall('G',value)  else value)(value=value)
+        if not isinstance(value,float) :
             value = float(value)
         return value
 
@@ -114,9 +117,12 @@ class Reference:
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True) 
+                sleep(1)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
+                sleep(1) 
 
     def write_device(self,data: {}):
+        # sleep(1)
         device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16)])[0]
         bit_width = 2 ** (data.get('MSB') - data.get('LSB') + 1)
         if int(data.get('Data'), 16) < bit_width:
@@ -135,7 +141,9 @@ class Reference:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
+                sleep(1)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+                sleep(1)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -143,9 +151,7 @@ class Reference:
             measure_values = None
             print(signal_Unit)
             if re.search('voltage', signal_Unit):
-                # self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-                sleep(0.1)
-                # trim_values,reg_value = self.trim_sweep_voltage(reg_trim,LSB_trim,MSB_trim)
+                self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
                 
             if re.search('current', signal_Unit):
                 meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
@@ -162,9 +168,10 @@ class Reference:
                 meter.outp_OFF(channel=3)
             
             if re.search('frequency', signal_Unit):
-                self.oscilloscope.set_trigger__mode(mode='NORM')
-                self.oscilloscope.set_HScale()
-                self.oscilloscope.set_Channel__VScale(scale=0.5)
+                # self.oscilloscope.set_trigger__mode(mode='NORM')
+                # self.oscilloscope.set_HScale()
+                # self.oscilloscope.set_Channel__VScale(scale=0.5)
+                self.trim_values,self.reg_value = self.trim_sweep_freq(self.reg_trim,self.LSB_trim,self.MSB_trim)
 
 
     def force_signal(self,force_signal_instruction: {}):
@@ -188,13 +195,13 @@ class Reference:
 
     def trim_sweep_voltage(self,reg_trim,lsb,msb):
         self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-        trim_values,reg_value = self.trim.sweep_trim_bit_voltage(reg_trim,lsb,msb)
-        return trim_values,reg_value
+        self.trim_values,self.reg_value = self.trim.sweep_trim_bit_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
+        return self.trim_values,self.reg_value
     
     def trim_sweep_freq(self,reg_trim,lsb,msb):
-        input("Remove the wire that connects motherboars with the matrix number 2")
-        trim_values,reg_value = self.trim.sweep_trim_bit_freq(reg_trim,lsb,msb)
-        return trim_values,reg_value
+        # input("Remove the wire that connects motherboars with the matrix number 2")
+        self.trim_values,self.reg_value = self.trim.sweep_trim_bit_freq(self.reg_trim,self.LSB_trim,self.MSB_trim)
+        return self.trim_values,self.reg_value
 
     def find_best_code(self, trim_values, reg_value, typical):
         closest_value = self.trim.find_closest_value(trim_values,typical)
@@ -206,7 +213,7 @@ class Reference:
     def ref_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
-        typical = self.typical_value_clean(data[test_name].loc[6])
+        typical = self.value_clean(data[test_name].loc[6])
         print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
@@ -236,13 +243,13 @@ class Reference:
                 reg_instr = self.parser.extract_TrimSweep__Instruction(instruction)
                 print(f'Trim instruction : {reg_instr}')
                 print(type(reg_instr))
-                reg_trim = int(reg_instr.get('RegAddr'), 16)
-                LSB_trim = int(reg_instr.get('LSB'))
-                MSB_trim = int(reg_instr.get('MSB'))
-                trim_values,reg_value = self.trim_sweep_voltage(reg_trim,LSB_trim,MSB_trim)
+                self.reg_trim = int(reg_instr.get('RegAddr'), 16)
+                self.LSB_trim = int(reg_instr.get('LSB'))
+                self.MSB_trim = int(reg_instr.get('MSB'))
+                # self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
 
             if re.match('calculate', instruction):
-                closest_value,best_code =self.find_best_code(trim_values,reg_value,typical)
+                closest_value,best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
                 best_codes.append(best_code)
                 closest_values.append(closest_value)
                 print(best_codes)
@@ -289,4 +296,5 @@ if __name__ == '__main__':
     ref.supplies.outp_OFF(channel=2)
     ref.meter.outp_OFF(channel=1)
     ref.meter.outp_OFF(channel=4)
+
 
