@@ -15,17 +15,18 @@ from pathlib import Path
 from box import ConfigBox
 from box.exceptions import BoxValueError
 
-class AZ_comp:
+class Boost:
 
     ############################ initialization
     def __init__(self):
-        self.data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
+        self.data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Boost')
         self.procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
         self.mcp = MCP2221()
         self.mcp2317 = MCP2317(mcp=self.mcp)
         self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
+        self.supplies_8 = E3648('GPIB0::8::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.slave_address = 0x6c
@@ -172,10 +173,10 @@ class AZ_comp:
                     self.ps_gpib.outp_ON(channel=2)
             force_signal_instruction = None
 
-    def AZcomp_DFT(self,data=pd.DataFrame({}), test_name=''):
+    def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
-        typical = self.typical_value_clean(data[test_name].loc[6])
+        typical = self.value_clean(data[test_name].loc[6])
         print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
@@ -187,6 +188,9 @@ class AZ_comp:
                     self.execute_startup()
                 if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
                     print('Enable Ana TestPoint Procedure')
+                    self.execute_Enable_Ana_Testpoint()
+                if re.findall('Boost_test_default'.lower(), instruction):
+                    print('Enable Boost Test Default Procedure')
                     self.execute_Enable_Ana_Testpoint()
 
             if re.match('0x',instruction):
@@ -204,39 +208,42 @@ class AZ_comp:
 
 
 if __name__ == '__main__':
-    az_comp = AZ_comp()
+    boost = Boost()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+    output_control_8 = E3648.OutputControl(port='GPIB0::8::INSTR')
+    output_control_8.output_on (channel1=1, channel2=2, voltage1=4.0, voltage2=4.0, current1=0.2, current2=0.2)
+    sleep(1)
     output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
-    az_comp.meter.outp_ON(channel=4)
-    AZ_COMP_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
-    tests = az_comp.read_yaml(path_to_yaml=Path('Tests.yaml'))
+    boost.meter.outp_ON(channel=4)
+    boost_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Boost')
+    tests = boost.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
     try:
-        for test in tests.AZ_COMP:
+        for test in tests.Boost:
             print(f'............ {test}')
-            az_comp.AZcomp_DFT(AZ_COMP_data, test)
+            boost.boost_DFT(boost_data, test)
     except  TypeError as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
         pass 
     except  KeyboardInterrupt:
         for i in range (0x20,0x28):
-            az_comp.mcp2317.Switch_reset(device_addr=i)
-            az_comp.supplies.outp_OFF(channel=1)
+            boost.mcp2317.Switch_reset(device_addr=i)
+            boost.supplies.outp_OFF(channel=1)
             sleep(0.5)
-            az_comp.supplies.outp_OFF(channel=2)
+            boost.supplies.outp_OFF(channel=2)
     except  Exception as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
         for i in range (0x20,0x28):
-            az_comp.mcp2317.Switch_reset(device_addr=i)
-            az_comp.supplies.outp_OFF(channel=1)
+            boost.mcp2317.Switch_reset(device_addr=i)
+            boost.supplies.outp_OFF(channel=1)
             sleep(0.5)
-            az_comp.supplies.outp_OFF(channel=2)
+            boost.supplies.outp_OFF(channel=2)
 
-    az_comp.supplies.outp_OFF(channel=1)
-    az_comp.supplies.outp_OFF(channel=2)
-    az_comp.meter.outp_OFF(channel=1)
-    az_comp.meter.outp_OFF(channel=4)
+    boost.supplies.outp_OFF(channel=1)
+    boost.supplies.outp_OFF(channel=2)
+    boost.meter.outp_OFF(channel=1)
+    boost.meter.outp_OFF(channel=4)
     # finally:
 

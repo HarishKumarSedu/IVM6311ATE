@@ -175,7 +175,7 @@ class AZ_comp:
     def AZcomp_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
-        typical = self.typical_value_clean(data[test_name].loc[6])
+        typical = self.value_clean(data[test_name].loc[6])
         print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
