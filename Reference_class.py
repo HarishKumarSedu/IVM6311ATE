@@ -77,19 +77,15 @@ class Reference:
             'n': 10 ** -9,   # nano
             'p': 10 ** -12   # pico
         }
-
         match = re.match(r"([-+]?\d*\.?\d+)([a-zA-Z]*)", value_str)
         if match:
             value, unit = match.groups()
             value = float(value)
-
             if unit and unit[0].lower() in prefixes:
                 prefix = unit[0].lower()
                 multiplier = prefixes[prefix]
                 value *= multiplier
-
             return value
-
         return value_str
 
     def convert_dict_values(self,data):
@@ -97,7 +93,6 @@ class Reference:
         for key, value in data.items():
             converted_value = self.convert_value_unit(value)
             converted_dict[key] = converted_value
-
         return converted_dict
 
     def extract_last_n_values(self,data, n):
@@ -142,8 +137,9 @@ class Reference:
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
                 sleep(1)
+                self.meter.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
-                sleep(1)
+                sleep(2)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -152,7 +148,6 @@ class Reference:
             print(signal_Unit)
             if re.search('voltage', signal_Unit):
                 self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
-                
             if re.search('current', signal_Unit):
                 meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=True)
@@ -166,7 +161,6 @@ class Reference:
                 print(f' value : {measure_values}')
                 sleep(1)
                 meter.outp_OFF(channel=3)
-            
             if re.search('frequency', signal_Unit):
                 # self.oscilloscope.set_trigger__mode(mode='NORM')
                 # self.oscilloscope.set_HScale()
