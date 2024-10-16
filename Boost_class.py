@@ -23,7 +23,7 @@ class Boost:
         self.procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
         self.mcp = MCP2221()
         self.mcp2317 = MCP2317(mcp=self.mcp)
-        self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+        self.pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
         self.supplies_8 = E3648('GPIB0::8::INSTR')
@@ -106,6 +106,8 @@ class Boost:
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
+                self.pa.setVoltage(channel=4,voltage=1.8)
+                self.pa.outp_ON(channel=4)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True) 
 
     def write_device(self,data: {}):
@@ -119,7 +121,7 @@ class Boost:
             print(f'Data is out of width')
 
     def execute_Enable_Ana_Testpoint(self):
-        startup_procedure = self.procedures['Enable_Ana_Testpoint_AZ_comp'].loc[0].split('\n')
+        startup_procedure = self.procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
         for instruction in startup_procedure:
             instruction = instruction.lower()
             if re.match('0x', instruction):
@@ -128,6 +130,33 @@ class Boost:
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+
+    def execute_Boost_test_default(self):
+        startup_procedure = self.procedures['Boost_Test_Default'].loc[0].split('\n')
+        for instruction in startup_procedure:
+            instruction = instruction.lower()
+            if re.match('0x', instruction):
+                reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
+                self.write_device(reg_data)
+            if re.match('Force__VBIAS__5V'.lower(), instruction):
+                print('Force__VBIAS__5V')
+                self.supplies_8.setVoltage(channel=2,voltage=5.0)
+                self.supplies_8.outp_ON(channel=2)
+            if re.match('Force__VBSO__3.6V'.lower(), instruction):
+                print('Force__VBSO__3.6V')
+                self.supplies_8.setVoltage(channel=1,voltage=3.6)
+                self.supplies_8.outp_ON(channel=1)
+            if re.match('Force__SW__3.6V'.lower(), instruction):
+                print('Force__SW__3.6V')
+                SW_target = 3.6
+                tollerance = 0.1
+                self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=True)
+                sleep(1)
+                SW_pin= self.voltmeter.meas_V()
+                if(SW_pin - SW_target) <= tollerance:
+                    print("SW is shorted on VBAT")
+                else:
+                    input("Shorted SW with the jumper on the board, or connected SW to a supply")
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -141,18 +170,18 @@ class Boost:
                 print(f' value : {measure_values}')
 
             if re.search('current', signal_Unit):
-                meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+                pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=True)
                 sleep(1)
                 self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=True)
                 sleep(0.1)
-                meter.outp_ON(channel=3)
-                meter.setMeter_Range_Auto__Current(channel=3)
+                pa.outp_ON(channel=3)
+                pa.setMeter_Range_Auto__Current(channel=3)
                 sleep(1)
-                measure_values = meter.getCurrent(channel=3)
+                measure_values = pa.getCurrent(channel=3)
                 print(f' value : {measure_values}')
                 sleep(1)
-                meter.outp_OFF(channel=3)
+                pa.outp_OFF(channel=3)
 
     def force_signal(self,force_signal_instruction: {}):
         if force_signal_instruction:
@@ -161,16 +190,23 @@ class Boost:
             print(signal_Unit)
             if re.search('V', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
-                if re.search('outn', signal_name):
-                    self.ps_gpib.setCurrent(channel=1, current=0.2)
-                    self.ps_gpib.setVoltage(channel=1, voltage=signal_force)
+                if re.search('SDWN', signal_name):
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                     sleep(0.5)
-                    self.ps_gpib.outp_ON(channel=1)
-                if re.search('outp', signal_name):
-                    self.ps_gpib.setCurrent(channel=2, current=0.2)
-                    self.ps_gpib.setVoltage(channel=2, voltage=signal_force)
+                    self.pa.setVoltage(channel=4, voltage=signal_force)
+                    self.pa.outp_ON(channel=4)
+                    sleep(0.2)
+                if re.search('VBIAS', signal_name):
+                    boost.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
                     sleep(0.5)
-                    self.ps_gpib.outp_ON(channel=2)
+                    boost.supplies_8.setVoltage(channel=1, voltage=5)
+                    boost.supplies_8.outp_ON(channel=1)
+                if re.search('VBSO', signal_name):
+                    boost.mcp2317.Switch(device_addr=0x22, row=7, col=6, Enable=True)
+                    sleep(0.5)
+                    boost.supplies_8.setVoltage(channel=2, voltage=3.6)
+                    boost.supplies_8.outp_ON(channel=2)
+
             force_signal_instruction = None
 
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
@@ -186,12 +222,12 @@ class Boost:
                 if re.findall('startup', instruction):
                     print('Startup Procedure')
                     self.execute_startup()
-                if re.findall('Enable_Ana_Testpoint_AZ_comp'.lower(), instruction):
+                if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
                     print('Enable Ana TestPoint Procedure')
                     self.execute_Enable_Ana_Testpoint()
                 if re.findall('Boost_test_default'.lower(), instruction):
                     print('Enable Boost Test Default Procedure')
-                    self.execute_Enable_Ana_Testpoint()
+                    self.execute_Boost_test_default()
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
@@ -210,11 +246,19 @@ class Boost:
 if __name__ == '__main__':
     boost = Boost()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    output_control_8 = E3648.OutputControl(port='GPIB0::8::INSTR')
-    output_control_8.output_on (channel1=1, channel2=2, voltage1=4.0, voltage2=4.0, current1=0.2, current2=0.2)
-    sleep(1)
-    output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
-    boost.meter.outp_ON(channel=4)
+    boost.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
+    sleep(0.5)
+    boost.supplies_8.setVoltage(channel=1, voltage=5)
+    boost.supplies_8.outp_ON(channel=1)
+    sleep(0.5)
+    boost.mcp2317.Switch(device_addr=0x22, row=7, col=6, Enable=True)
+    sleep(0.5)
+    boost.supplies_8.setVoltage(channel=2, voltage=3.6)
+    boost.supplies_8.outp_ON(channel=2)
+    sleep(0.5)
+    output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
+    boost.pa.setVoltage(channel=4,voltage=1.8)
+    boost.pa.outp_ON(channel=4)
     boost_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Boost')
     tests = boost.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
@@ -243,7 +287,7 @@ if __name__ == '__main__':
 
     boost.supplies.outp_OFF(channel=1)
     boost.supplies.outp_OFF(channel=2)
-    boost.meter.outp_OFF(channel=1)
-    boost.meter.outp_OFF(channel=4)
+    boost.pa.outp_OFF(channel=1)
+    boost.pa.outp_OFF(channel=4)
     # finally:
 
