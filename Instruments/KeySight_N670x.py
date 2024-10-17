@@ -448,6 +448,11 @@ class N670x:
     def emulMode_CV_Load(self,channel:int):
         self.my_instr.write(f'EMUL CVLoad,(@{str(channel)})')
 
+    def Set_4Q(self, channel:int, v):
+        self.my_instr(f'VOLTage <value>, (@<channel>)')
+        self.my_instr.write(f'SOURce:FUNCtion:MODE SOURce,(@{str(channel)})')
+        
+
 if __name__ == '__main__':
     supply = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
     # print(supply.get_IDN())
@@ -467,5 +472,6 @@ if __name__ == '__main__':
     # supply.my_instr.write('TRIG:TRAN(@1)')
     # supply.my_instr.write('*TRG')
     # supply.arb_Trigger()
-    supply.outp_ON(channel=3)
-    print(supply.getCurrent(channel=3))
+    # supply.outp_ON(channel=3)
+    # print(supply.getCurrent(channel=3))
+    supply.emulMode_4Q(channel=3)

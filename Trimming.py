@@ -117,6 +117,7 @@ class Trim:
             freq = 0
             # input('>>>>>>>>')
             for i in range(0,20):
+                sleep(0.1)
                 freq= freq + self.scope.meas_Freq(Meas='MEAS2')
                 sleep(0.01)
             trim_values.append(freq/(i+1))

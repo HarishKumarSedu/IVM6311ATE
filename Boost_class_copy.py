@@ -109,7 +109,7 @@ class Boost:
                 print('Force 1.8V on SDWN')
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
                 sleep(0.5)
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)
 
     def write_device(self, data: {}):
@@ -153,11 +153,12 @@ class Boost:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
+                print(reg_data)
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
                 sleep(0.5)
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
 
     def execute_Boost_test_default(self):
@@ -191,18 +192,22 @@ class Boost:
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
             signal_Unit = measure_signal.get('Unit')
-            measure_values = None
+            measure_values = []
             print(signal_Unit)
             if re.search('voltage', signal_Unit):
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-                sleep(0.1)
-                measure_values = self.voltmeter.meas_V()
-                print(f' value : {measure_values}')
+                signal_pin = measure_signal.get('Signal')
+                if re.search('sdwn',signal_pin):
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
+                    measure_value = self.voltmeter.meas_V()
+                    measure_values.append(measure_value)
+                    print(measure_values)
             if re.search('current', signal_Unit):
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=8, Enable=True)
-                sleep(0.5)
-                bst_mirr = self.ammeter.meas_I()
-                print("bst_mirr = ", bst_mirr)
+                signal_pin = measure_signal.get('Signal')
+                if re.search('sdwn',signal_pin):
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=8, Enable=True)
+                    sleep(0.5)
+                    bst_mirr = self.ammeter.meas_I()
+                    print("bst_mirr = ", bst_mirr)
 
     def force_signal(self,force_signal_instruction: {}):
         if force_signal_instruction:
@@ -211,22 +216,29 @@ class Boost:
             print(signal_Unit)
             if re.search('V', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
-                if re.search('SDWN', signal_name):
+                if re.search('sdwn', signal_name):
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                     sleep(0.5)
                     self.pa.setVoltage(channel=4, voltage=signal_force)
                     self.pa.outp_ON(channel=4)
                     sleep(0.2)
-                if re.search('VBIAS', signal_name):
-                    boost.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
+                if re.search('vbias', signal_name):
+                    self.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
                     sleep(0.5)
-                    boost.supplies_8.setVoltage(channel=1, voltage=5)
-                    boost.supplies_8.outp_ON(channel=1)
-                if re.search('VBSO', signal_name):
-                    boost.mcp2317.Switch(device_addr=0x22, row=7, col=6, Enable=True)
+                    self.supplies_8.setVoltage(channel=1, voltage=signal_force)
+                    self.supplies_8.outp_ON(channel=1)
+                if re.search('vbso', signal_name):
+                    self.mcp2317.Switch(device_addr=0x23, row=7, col=6, Enable=True)
                     sleep(0.5)
-                    boost.supplies_8.setVoltage(channel=2, voltage=3.6)
-                    boost.supplies_8.outp_ON(channel=2)
+                    self.supplies_8.setVoltage(channel=2, voltage=signal_force)
+                    self.supplies_8.outp_ON(channel=2)
+            if re.search('A', signal_Unit):
+                signal_force = force_signal_instruction.get('Value')
+                if re.search('sw',signal_name):
+                    self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
+                    sleep(0.5)
+                    self.pa.setCurrent(channel=1, current= signal_force)
+                    sleep(0.1)
 
             force_signal_instruction = None
 
@@ -253,7 +265,7 @@ class Boost:
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                # print(reg_data)
+                print(reg_data)
                 self.write_device(reg_data)
             if re.match('force', instruction):
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
@@ -290,24 +302,35 @@ if __name__ == '__main__':
         for test in tests.Boost:
             print(f'............ {test}')
             boost.boost_DFT(boost_data, test)
+            # for i in range (0x20,0x28):
+            #     boost.mcp2317.Switch_reset(device_addr=i)
     except  TypeError as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
         pass 
     except  KeyboardInterrupt:
+        boost.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies.outp_OFF(channel=2)
+        boost.pa.outp_OFF(channel=4)
+        boost.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies_8.outp_OFF(channel=2)
         for i in range (0x20,0x28):
             boost.mcp2317.Switch_reset(device_addr=i)
-            boost.supplies.outp_OFF(channel=1)
-            sleep(0.5)
-            boost.supplies.outp_OFF(channel=2)
     except  Exception as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
         for i in range (0x20,0x28):
             boost.mcp2317.Switch_reset(device_addr=i)
-            boost.supplies.outp_OFF(channel=1)
-            sleep(0.5)
-            boost.supplies.outp_OFF(channel=2)
+        boost.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies.outp_OFF(channel=2)
+        boost.supplies.outp_OFF(channel=2)
+        boost.pa.outp_OFF(channel=4)
+        boost.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies_8.outp_OFF(channel=2)
 
     boost.supplies.outp_OFF(channel=1)
     boost.supplies.outp_OFF(channel=2)
