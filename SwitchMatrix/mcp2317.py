@@ -4,6 +4,7 @@ import warnings
 import time 
 import sys
 # from mcp2221 import MCP2221
+from time import sleep
 
 
 class MCP2317:
@@ -82,8 +83,11 @@ class MCP2317:
 if __name__=='__main__':
     mcp = MCP2221()  
     mcp2317 = MCP2317(mcp=mcp)  
-    time.sleep(1)
-    mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=True)
+    # time.sleep(1)
+    # mcp2317.Switch(device_addr=0x23, row=7, col=6, Enable=False)
+    mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=False)
+    sleep(0.5)
+    mcp2317.Switch(device_addr=0x22, row=7, col=6, Enable=False)
     # mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=False)
     # mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=False)
     # mcp2317.Switch(device_addr=0x20,row=1, col=2, Enable=True)

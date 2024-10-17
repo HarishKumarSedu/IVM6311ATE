@@ -29,6 +29,7 @@ class Boost:
         self.supplies_8 = E3648('GPIB0::8::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
+        self.ammeter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
         self.slave_address = 0x6c
 
     def value_clean(self,value:str):
@@ -106,20 +107,45 @@ class Boost:
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
-                self.pa.setVoltage(channel=4,voltage=1.8)
-                self.pa.outp_ON(channel=4)
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True) 
+                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                sleep(0.5)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+                sleep(0.5)
 
-    def write_device(self,data: {}):
-        device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16)])[0]
-        print(hex(device_data))
-        bit_width = 2 ** (data.get('MSB') - data.get('LSB') + 1)
-        if int(data.get('Data'), 16) < bit_width:
-            mask = ~((bit_width - 1) << data.get('LSB'))
-            device_data = (device_data & mask) | ((int(data.get('Data'), 16)) << data.get('LSB'))
-            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16), device_data])
+    def write_device(self, data: {}):
+        # Function to convert hexadecimal or numeric values to integers
+        def convert_to_int(value):
+            if isinstance(value, str):
+                return int(value, 16)  # Convert from hexadecimal string to integer
+            elif isinstance(value, (int, float)):  # Also handle floats by converting them to integers
+                return int(value)
+            else:
+                raise TypeError(f"Unsupported type for conversion: {type(value)}")
+        # Convert MSB, LSB, RegAddr, and Data to integers
+        msb = convert_to_int(data.get('MSB'))
+        lsb = convert_to_int(data.get('LSB'))
+        reg_addr = convert_to_int(data.get('RegAddr'))
+        data_value = convert_to_int(data.get('Data'))
+        # Read the register from the device
+        device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_addr])[0]
+        # print(hex(device_data))
+        # Calculate the bit width and ensure it's an integer
+        bit_width = int(2 ** (msb - lsb + 1))
+        # Check if the value is valid
+        if data_value < bit_width:
+            # Create the mask for the bit width, ensuring that mask and lsb are integers
+            mask = ~((bit_width - 1) << int(lsb))
+            # Ensure `device_data` and `mask` are integers
+            device_data = int(device_data)
+            mask = int(mask)
+            # Perform bitwise operations
+            device_data = (device_data & mask) | (data_value << int(lsb))
+            print(hex(device_data))
+            # Write the new value to the device
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg_addr, device_data])
         else:
             print(f'Data is out of width')
+
 
     def execute_Enable_Ana_Testpoint(self):
         startup_procedure = self.procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
@@ -129,8 +155,10 @@ class Boost:
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
-                print('Force SDWN OPEN')
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                sleep(0.5)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
+                sleep(0.5)
 
     def execute_Boost_test_default(self):
         startup_procedure = self.procedures['Boost_Test_Default'].loc[0].split('\n')
@@ -171,16 +199,10 @@ class Boost:
                 measure_values = self.voltmeter.meas_V()
                 print(f' value : {measure_values}')
             if re.search('current', signal_Unit):
-                pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=8, Enable=True)
                 sleep(0.5)
-                pa.outp_ON(channel=1)
-                pa.setMeter_Range_Auto__Current(channel=1)
-                sleep(1)
-                measure_values = pa.getCurrent(channel=1)
-                print(f' value : {measure_values}')
-                sleep(1)
-                pa.outp_OFF(channel=3)
+                bst_mirr = self.ammeter.meas_I()
+                print("bst_mirr = ", bst_mirr)
 
     def force_signal(self,force_signal_instruction: {}):
         if force_signal_instruction:
@@ -249,11 +271,13 @@ if __name__ == '__main__':
     boost.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
     sleep(0.5)
     boost.supplies_8.setVoltage(channel=1, voltage=5)
+    boost.supplies_8.setCurrent(channel=1, current=0.2)
     boost.supplies_8.outp_ON(channel=1)
     sleep(0.5)
-    boost.mcp2317.Switch(device_addr=0x22, row=7, col=6, Enable=True)
+    boost.mcp2317.Switch(device_addr=0x23, row=7, col=6, Enable=True)
     sleep(0.5)
     boost.supplies_8.setVoltage(channel=2, voltage=3.6)
+    boost.supplies_8.setCurrent(channel=2, current=0.2)
     boost.supplies_8.outp_ON(channel=2)
     sleep(0.5)
     output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
@@ -289,5 +313,7 @@ if __name__ == '__main__':
     boost.supplies.outp_OFF(channel=2)
     boost.pa.outp_OFF(channel=1)
     boost.pa.outp_OFF(channel=4)
+    boost.supplies_8.outp_OFF(channel=1)
+    boost.supplies_8.outp_OFF(channel=2)
     # finally:
 

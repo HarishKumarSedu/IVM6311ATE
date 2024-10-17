@@ -136,10 +136,10 @@ class Reference:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
-                sleep(1)
                 self.meter.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
-                sleep(2)
+                sleep(0.5)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
