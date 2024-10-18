@@ -104,6 +104,7 @@ class Boost:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction) 
+                print(reg_data)
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
@@ -206,7 +207,8 @@ class Boost:
                 if re.search('sdwn',signal_pin):
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=True)
                     sleep(0.5)
-                    
+                    # self.pa.setRange_Current(channel =1, voltageRange= 1*10**(-6))
+                    self.pa.setMeter_Range_Auto__Current(channel=1,Curr_range='1e-6')
                     bst_mirr = self.pa.getCurrent(channel=1)
                     print("bst_mirr = ", bst_mirr)
 
@@ -218,10 +220,11 @@ class Boost:
             if re.search('V', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sdwn', signal_name):
-                    self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=True)
                     sleep(0.5)
-                    self.pa.setVoltage(channel=4, voltage=signal_force)
-                    self.pa.outp_ON(channel=4)
+                    self.pa.emulMode_2Q(channel=1)
+                    self.pa.setVoltage(channel=1, voltage=signal_force)
+                    self.pa.outp_ON(channel=1)
                     sleep(0.2)
                 if re.search('vbias', signal_name):
                     self.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
@@ -322,18 +325,24 @@ if __name__ == '__main__':
         sleep(0.5)
         boost.supplies_8.outp_OFF(channel=2)
         pass 
-    except  KeyboardInterrupt:
-        for i in range (0x20,0x27):
+
+    except KeyboardInterrupt:
+        try:
+            for i in range(0x20, 0x27):
+                sleep(0.5)
+                boost.mcp2317.Switch_reset(device_addr=i)
+            boost.pa.outp_OFF(channel=4)
+            boost.supplies.outp_OFF(channel=1)
             sleep(0.5)
-            boost.mcp2317.Switch_reset(device_addr=i)
-        boost.pa.outp_OFF(channel=4)
-        boost.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies.outp_OFF(channel=2)
-        sleep(0.1)
-        boost.supplies_8.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies_8.outp_OFF(channel=2)
+            boost.supplies.outp_OFF(channel=2)
+            sleep(0.1)
+            boost.supplies_8.outp_OFF(channel=1)
+            sleep(0.5)
+            boost.supplies_8.outp_OFF(channel=2)
+        except KeyboardInterrupt:
+            print("Interruzione forzata durante il blocco di cleanup")
+            raise  
+
     except  Exception as e:
         print(f'PORCO Entered in Exception loop :> {e}')
         traceback.print_exc()

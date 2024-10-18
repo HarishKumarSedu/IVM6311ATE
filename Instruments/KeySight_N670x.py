@@ -474,4 +474,4 @@ if __name__ == '__main__':
     # supply.arb_Trigger()
     # supply.outp_ON(channel=3)
     # print(supply.getCurrent(channel=3))
-    supply.emulMode_Ammeter(channel=1)
+    supply.setCurrentMode(channel=1)
