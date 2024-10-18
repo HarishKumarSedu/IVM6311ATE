@@ -445,10 +445,10 @@ class N670x:
     def emulMode_CC_Load(self,channel:int):
         self.my_instr.write(f'EMUL CCLoad,(@{str(channel)})')
 
-    def emulMode_CV_Load(self,channel:int):
-        self.my_instr.write(f'EMUL CVLoad,(@{str(channel)})')
+    def emulMode_Ammeter(self,channel:int):
+        self.my_instr.write(f'EMUL AMETer,(@{str(channel)})')
 
-    def Set_4Q(self, channel:int, v):
+    def Set_4Q(self, channel:int, voltage):
         self.my_instr(f'VOLTage <value>, (@<channel>)')
         self.my_instr.write(f'SOURce:FUNCtion:MODE SOURce,(@{str(channel)})')
         
@@ -474,4 +474,4 @@ if __name__ == '__main__':
     # supply.arb_Trigger()
     # supply.outp_ON(channel=3)
     # print(supply.getCurrent(channel=3))
-    supply.emulMode_4Q(channel=3)
+    supply.emulMode_Ammeter(channel=1)

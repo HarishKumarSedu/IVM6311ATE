@@ -304,7 +304,6 @@ if __name__ == '__main__':
 for i in range (0x20,0x27):
     sleep(0.5)
     ref.mcp2317.Switch_reset(device_addr=i)
-
 ref.ps_gpib.outp_OFF(channel=1)
 ref.ps_gpib.outp_OFF(channel=2)
 ref.supplies.outp_OFF(channel=1)

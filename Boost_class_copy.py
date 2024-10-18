@@ -204,9 +204,10 @@ class Boost:
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
-                    self.mcp2317.Switch(device_addr=0x20, row=1, col=8, Enable=True)
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=True)
                     sleep(0.5)
-                    bst_mirr = self.ammeter.meas_I()
+                    
+                    bst_mirr = self.pa.getCurrent(channel=1)
                     print("bst_mirr = ", bst_mirr)
 
     def force_signal(self,force_signal_instruction: {}):
@@ -280,13 +281,9 @@ class Boost:
 if __name__ == '__main__':
     boost = Boost()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    boost.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
-    sleep(0.5)
     boost.supplies_8.setVoltage(channel=1, voltage=5)
     boost.supplies_8.setCurrent(channel=1, current=0.2)
     boost.supplies_8.outp_ON(channel=1)
-    sleep(0.5)
-    boost.mcp2317.Switch(device_addr=0x23, row=7, col=6, Enable=True)
     sleep(0.5)
     boost.supplies_8.setVoltage(channel=2, voltage=3.6)
     boost.supplies_8.setCurrent(channel=2, current=0.2)
@@ -300,43 +297,66 @@ if __name__ == '__main__':
     print(tests)
     try:
         for test in tests.Boost:
+            for i in range (0x20,0x27):
+                sleep(0.5)
+                boost.mcp2317.Switch_reset(device_addr=i)
+            sleep(0.1)
             print(f'............ {test}')
             boost.boost_DFT(boost_data, test)
-            # for i in range (0x20,0x28):
-            #     boost.mcp2317.Switch_reset(device_addr=i)
     except  TypeError as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
         pass 
-    except  KeyboardInterrupt:
-        boost.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies.outp_OFF(channel=2)
-        boost.pa.outp_OFF(channel=4)
-        boost.supplies_8.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies_8.outp_OFF(channel=2)
-        for i in range (0x20,0x28):
-            boost.mcp2317.Switch_reset(device_addr=i)
-    except  Exception as e:
-        print(f'Entered in Exception loop :> {e}')
+    except  TypeError as e:
+        print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
-        for i in range (0x20,0x28):
+        for i in range (0x20,0x27):
+            sleep(0.5)
             boost.mcp2317.Switch_reset(device_addr=i)
+        boost.pa.outp_OFF(channel=4)
         boost.supplies.outp_OFF(channel=1)
         sleep(0.5)
         boost.supplies.outp_OFF(channel=2)
-        boost.supplies.outp_OFF(channel=2)
-        boost.pa.outp_OFF(channel=4)
+        sleep(0.1)
         boost.supplies_8.outp_OFF(channel=1)
         sleep(0.5)
         boost.supplies_8.outp_OFF(channel=2)
-
-    boost.supplies.outp_OFF(channel=1)
-    boost.supplies.outp_OFF(channel=2)
-    boost.pa.outp_OFF(channel=1)
-    boost.pa.outp_OFF(channel=4)
-    boost.supplies_8.outp_OFF(channel=1)
-    boost.supplies_8.outp_OFF(channel=2)
-    # finally:
+        pass 
+    except  KeyboardInterrupt:
+        for i in range (0x20,0x27):
+            sleep(0.5)
+            boost.mcp2317.Switch_reset(device_addr=i)
+        boost.pa.outp_OFF(channel=4)
+        boost.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies.outp_OFF(channel=2)
+        sleep(0.1)
+        boost.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies_8.outp_OFF(channel=2)
+    except  Exception as e:
+        print(f'PORCO Entered in Exception loop :> {e}')
+        traceback.print_exc()
+        for i in range (0x20,0x27):
+            sleep(0.5)
+            boost.mcp2317.Switch_reset(device_addr=i)
+        boost.pa.outp_OFF(channel=4)
+        boost.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies.outp_OFF(channel=2)
+        sleep(0.1)
+        boost.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        boost.supplies_8.outp_OFF(channel=2)
+for i in range (0x20,0x27):
+    sleep(0.5)
+    boost.mcp2317.Switch_reset(device_addr=i)
+boost.pa.outp_OFF(channel=1)
+boost.pa.outp_OFF(channel=4)
+sleep(0.1)
+boost.supplies.outp_OFF(channel=1)
+boost.supplies.outp_OFF(channel=2)
+sleep(0.1)
+boost.supplies_8.outp_OFF(channel=1)
+boost.supplies_8.outp_OFF(channel=2)
 
