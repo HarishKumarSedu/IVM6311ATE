@@ -78,6 +78,8 @@ class Trim:
         # Read the value of the register (assuming mcpRead returns a list with one byte)
         reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Take the first element of the list
         print(hex(reg_val))
+        self.scope.set_HScale('100E-6')
+        sleep(1)
         # self.scope.set_autoSet()
         self.scope.set_trigger__mode(mode='NORM')
         self.scope.set_HScale('10E-6')
@@ -115,11 +117,13 @@ class Trim:
             # Measure the trim value and add it to the list
             i=0
             freq = 0
+            sleep(1)
             # input('>>>>>>>>')
+            # freq = self.scope.Meas_Mean(channel='CH2', Meas='MEAS1')
+            # print(freq)
             for i in range(0,20):
-                sleep(0.1)
+                sleep(0.05)
                 freq= freq + self.scope.meas_Freq(Meas='MEAS2')
-                sleep(0.01)
             trim_values.append(freq/(i+1))
 
             print(f"Increment: {increment}, Internal bits: {bin(internal_bits)}, Register: {hex(new_register_val)}, freq: {trim_values[-1]}")

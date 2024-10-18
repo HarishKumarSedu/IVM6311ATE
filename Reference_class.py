@@ -164,9 +164,6 @@ class Reference:
                 sleep(1)
                 meter.outp_OFF(channel=3)
             if re.search('frequency', signal_Unit):
-                # self.oscilloscope.set_trigger__mode(mode='NORM')
-                # self.oscilloscope.set_HScale()
-                # self.oscilloscope.set_Channel__VScale(scale=0.5)
                 self.trim_values,self.reg_value = self.trim_sweep_freq(self.reg_trim,self.LSB_trim,self.MSB_trim)
 
 
@@ -263,34 +260,56 @@ if __name__ == '__main__':
     print(tests)
     best_codes = []
     closest_values = []
+
     try:
         for test in tests.Trim:
+            for i in range (0x20,0x27):
+                sleep(0.5)
+                ref.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             ref.ref_DFT(ref_data, test)
     except  TypeError as e:
         print(f'Entered in Exception loop :> {e}')
         traceback.print_exc()
         pass 
-    except  KeyboardInterrupt:
-        for i in range (0x20,0x28):
-            ref.mcp2317.Switch_reset(device_addr=i)
-            ref.supplies.outp_OFF(channel=1)
-            sleep(0.5)
-            ref.supplies.outp_OFF(channel=2)
-            ref.meter.outp_OFF(channel = 4)
-    except  Exception as e:
-        print(f'Entered in Exception loop :> {e}')
+    except  TypeError as e:
+        print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
-        for i in range (0x20,0x28):
-            ref.mcp2317.Switch_reset(device_addr=i)
-            ref.supplies.outp_OFF(channel=1)
+        for i in range (0x20,0x27):
             sleep(0.5)
-            ref.supplies.outp_OFF(channel=2)
-            ref.meter.outp_OFF(channel = 4)
+            ref.mcp2317.Switch_reset(device_addr=i)
+        ref.meter.outp_OFF(channel=4)
+        ref.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        ref.supplies.outp_OFF(channel=2)
+        pass 
+    except  KeyboardInterrupt:
+        for i in range (0x20,0x27):
+            sleep(0.5)
+            ref.mcp2317.Switch_reset(device_addr=i)
+        ref.meter.outp_OFF(channel=4)
+        ref.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        ref.supplies.outp_OFF(channel=2)
+    except  Exception as e:
+        print(f'PORCO Entered in Exception loop :> {e}')
+        traceback.print_exc()
+        for i in range (0x20,0x27):
+            sleep(0.5)
+            ref.mcp2317.Switch_reset(device_addr=i)
+        ref.meter.outp_OFF(channel=4)
+        ref.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        ref.supplies.outp_OFF(channel=2)
+for i in range (0x20,0x27):
+    sleep(0.5)
+    ref.mcp2317.Switch_reset(device_addr=i)
 
-    ref.supplies.outp_OFF(channel=1)
-    ref.supplies.outp_OFF(channel=2)
-    ref.meter.outp_OFF(channel=1)
-    ref.meter.outp_OFF(channel=4)
+ref.ps_gpib.outp_OFF(channel=1)
+ref.ps_gpib.outp_OFF(channel=2)
+ref.supplies.outp_OFF(channel=1)
+ref.supplies.outp_OFF(channel=2)
+ref.meter.outp_OFF(channel=1)
+ref.meter.outp_OFF(channel=4)
 
 
