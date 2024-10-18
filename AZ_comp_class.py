@@ -28,6 +28,7 @@ class AZ_comp:
         self.supplies = E3648('GPIB0::7::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
+        self.ammeter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
         self.slave_address = 0x6c
 
     def value_clean(self,value:str):
@@ -102,10 +103,14 @@ class AZ_comp:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction) 
+                print(reg_data)
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True) 
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
+                sleep(0.5)
+                self.meter.setVoltage(channel=4, voltage=1.8)
+                self.meter.outp_ON(channel=4)
 
     def write_device(self,data: {}):
         device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16)])[0]
@@ -123,6 +128,7 @@ class AZ_comp:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
+                print(reg_data)
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
@@ -140,18 +146,18 @@ class AZ_comp:
                 print(f' value : {measure_values}')
 
             if re.search('current', signal_Unit):
-                meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+                sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=True)
-                sleep(1)
+                sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=True)
-                sleep(0.1)
-                meter.outp_ON(channel=3)
-                meter.setMeter_Range_Auto__Current(channel=3)
-                sleep(1)
-                measure_values = meter.getCurrent(channel=3)
+                sleep(0.5)
+                measure_values = self.ammeter.meas_I()
                 print(f' value : {measure_values}')
-                sleep(1)
-                meter.outp_OFF(channel=3)
+                self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=False)
+                sleep(0.5)
+                self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=False)
+
+            
 
     def force_signal(self,force_signal_instruction: {}):
         if force_signal_instruction:
@@ -191,7 +197,7 @@ class AZ_comp:
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                # print(reg_data)
+                print(reg_data)
                 self.write_device(reg_data)
             if re.match('force', instruction):
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
@@ -207,33 +213,53 @@ if __name__ == '__main__':
     az_comp = AZ_comp()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
     output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
+    az_comp.meter.setVoltage(channel=4, voltage=1.8)
     az_comp.meter.outp_ON(channel=4)
     AZ_COMP_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
     tests = az_comp.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
     try:
         for test in tests.AZ_COMP:
+            for i in range (0x20,0x27):
+                sleep(0.5)
+                az_comp.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             az_comp.AZcomp_DFT(AZ_COMP_data, test)
     except  TypeError as e:
-        print(f'Entered in Exception loop :> {e}')
+        print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
+        for i in range (0x20,0x27):
+            sleep(0.5)
+            az_comp.mcp2317.Switch_reset(device_addr=i)
+        az_comp.meter.outp_OFF(channel=4)
+        az_comp.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        az_comp.supplies.outp_OFF(channel=2)
         pass 
     except  KeyboardInterrupt:
-        for i in range (0x20,0x28):
-            az_comp.mcp2317.Switch_reset(device_addr=i)
-            az_comp.supplies.outp_OFF(channel=1)
+        for i in range (0x20,0x27):
             sleep(0.5)
-            az_comp.supplies.outp_OFF(channel=2)
+            az_comp.mcp2317.Switch_reset(device_addr=i)
+        az_comp.meter.outp_OFF(channel=4)
+        az_comp.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        az_comp.supplies.outp_OFF(channel=2)
     except  Exception as e:
-        print(f'Entered in Exception loop :> {e}')
+        print(f'PORCO Entered in Exception loop :> {e}')
         traceback.print_exc()
-        for i in range (0x20,0x28):
-            az_comp.mcp2317.Switch_reset(device_addr=i)
-            az_comp.supplies.outp_OFF(channel=1)
+        for i in range (0x20,0x27):
             sleep(0.5)
-            az_comp.supplies.outp_OFF(channel=2)
+            az_comp.mcp2317.Switch_reset(device_addr=i)
+        az_comp.meter.outp_OFF(channel=4)
+        az_comp.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        az_comp.supplies.outp_OFF(channel=2)
 
+    for i in range (0x20,0x27):
+        sleep(0.5)
+        az_comp.mcp2317.Switch_reset(device_addr=i)
+    az_comp.ps_gpib.outp_OFF(channel=1)
+    az_comp.ps_gpib.outp_OFF(channel=2)
     az_comp.supplies.outp_OFF(channel=1)
     az_comp.supplies.outp_OFF(channel=2)
     az_comp.meter.outp_OFF(channel=1)
