@@ -203,13 +203,19 @@ class Boost:
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
+                    sleep(0.2)
                     sdwn = self.voltmeter.meas_V()
                     self.sdwn_measurements.append(sdwn)
                     print(self.sdwn_measurements)
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=False)
 
                 if re.search('vbso',signal_pin):
-                    self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-                    ron_voltage = self.voltmeter.meas_V()
+                    self.mcp2317.Switch(device_addr=0x23, row=7, col=1, Enable=True)
+                    sleep(0.2)
+                    vbso = self.voltmeter.meas_V()
+                    self.vbso_measurements.append(vbso)
+                    print(self.vbso_measurements)
+                    self.mcp2317.Switch(device_addr=0x23, row=7, col=1, Enable=False)
 
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
@@ -219,6 +225,7 @@ class Boost:
                     self.pa.setMeter_Range_Auto__Current(channel=1,Curr_range='1e-6')
                     bst_mirr = self.pa.getCurrent(channel=1)
                     print("bst_mirr = ", bst_mirr)
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=False)
 
         return 
 
@@ -263,26 +270,34 @@ class Boost:
                     self.pa.setCurrent(channel=1,current=signal_force)
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
+                if re.search('vbso',signal_name):
+                    self.mcp2317.Switch(device_addr=0x23, row=7, col=7, Enable=True)
+                    sleep(0.5)
+                    self.pa.emulMode_2Q(channel=1)
+                    self.pa.setCurrent_Priority(channel=1)
+                    self.pa.setCurrent(channel=1,current=signal_force)
+                    self.pa.outp_ON(channel=1)
+                    sleep(0.2)
             force_signal_instruction = None
 
     def calculate_signal(self, calculate_signal_instruction:{}):
             if calculate_signal_instruction:
                 signal_name = calculate_signal_instruction.get('Signal')
                 print(signal_name)
-                if re.search('tswitchsw1', signal_name):
+                if re.search('tswitchls', signal_name):
                     TSwitch_SW = self.sdwn_measurements[0]
                     print(TSwitch_SW)
                     TSwitch_GND = self.sdwn_measurements[1]
                     print(TSwitch_GND)
                     ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
                     print("RON_LS value: " , ron_ls)
-                if re.search('tswitchsw2', signal_name):
-                    TSwitch_SW = self.sdwn_measurements[0]
-                    print(TSwitch_SW)
-                    TSwitch_GND = self.sdwn_measurements[1]
-                    print(TSwitch_GND)
-                    ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
-                    print("RON_LS value: " , ron_ls)
+                if re.search('tsswitchhs', signal_name):
+                    TSwitch_SW2 = self.sdwn_measurements[2]
+                    print(TSwitch_SW2)
+                    TSwitch_vbso = self.vbso_measurements[0]
+                    print(TSwitch_vbso)
+                    ron_hs = ((TSwitch_vbso - TSwitch_SW2)/ (100e-3) )
+                    print("RON_HS value: " , ron_hs)
 
 
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
