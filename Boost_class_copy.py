@@ -206,9 +206,9 @@ class Boost:
             if re.search('voltage', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
-                    sleep(2)
+                    sleep(4)
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-                    sleep(5)
+                    sleep(2)
                     sdwn = self.voltmeter.meas_V()
                     sleep(0.5)
                     self.sdwn_measurements.append(sdwn)
