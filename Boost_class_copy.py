@@ -112,6 +112,7 @@ class Boost:
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                self.pa.outp_ON(channel=4)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)
@@ -161,8 +162,8 @@ class Boost:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
-                self.pa.setVoltage(channel=4,voltage=0)
-                sleep(0.5)
+                # self.pa.setVoltage(channel=4,voltage=0)
+                sleep(0.1)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
 
@@ -205,9 +206,11 @@ class Boost:
             if re.search('voltage', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
+                    sleep(2)
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-                    sleep(0.2)
+                    sleep(5)
                     sdwn = self.voltmeter.meas_V()
+                    sleep(0.5)
                     self.sdwn_measurements.append(sdwn)
                     print(self.sdwn_measurements)
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=False)
@@ -216,6 +219,7 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x23, row=7, col=1, Enable=True)
                     sleep(0.2)
                     vbso = self.voltmeter.meas_V()
+                    sleep(0.2)
                     self.vbso_measurements.append(vbso)
                     print(self.vbso_measurements)
                     self.mcp2317.Switch(device_addr=0x23, row=7, col=1, Enable=False)
@@ -250,6 +254,7 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
+                    self.pa.setVoltage_Priority(channel=1)
                     self.pa.setVoltage(channel=1, voltage=signal_force)
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
@@ -274,13 +279,16 @@ class Boost:
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sw',signal_name):
+                    self.pa.outp_OFF(channel=1)
+                    sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
                     self.pa.setCurrent_Priority(channel=1)
                     self.pa.setCurrent(channel=1,current=signal_force)
-                    self.pa.outp_ON(channel=1)
                     sleep(0.2)
+                    self.pa.outp_ON(channel=1)
+                    sleep(0.5)
                 if re.search('vbso',signal_name):
                     self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= False)
                     sleep(0.2)
@@ -314,7 +322,7 @@ class Boost:
                     print("RON_HS value: " , ron_hs)
                 if re.search('ronbyp', signal_name):
                     vbat = self.vbat_measurements[0]
-                    vbso_byp = self.vbso_measurements[0]
+                    vbso_byp = self.vbso_measurements[1]
                     print(vbso_byp)
                     ron_byp = ((vbat - vbso_byp)/ (100e-3) )
                     print("RON_BYP value: " , ron_byp)
@@ -381,6 +389,9 @@ if __name__ == '__main__':
             for i in range (0x20,0x27):
                 sleep(0.5)
                 boost.mcp2317.Switch_reset(device_addr=i)
+            boost.pa.outp_OFF(channel=1)
+            boost.pa.emulMode_2Q(channel=1)
+            boost.pa.setVoltage_Priority(channel=1)
             sleep(0.1)
             print(f'............ {test}')
             boost.boost_DFT(boost_data, test)
