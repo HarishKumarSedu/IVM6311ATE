@@ -268,9 +268,11 @@ class Boost:
             if calculate_signal_instruction:
                 signal_name = calculate_signal_instruction.get('Signal')
                 print(signal_name)
-                if re.search('TSwitchSW1', signal_name):
+                if re.search('tswitchsw1', signal_name):
                     TSwitch_SW = self.sdwn_measurements[0]
+                    print(TSwitch_SW)
                     TSwitch_GND = self.sdwn_measurements[1]
+                    print(TSwitch_GND)
                     ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
                     print("RON_LS value: " , ron_ls)
 
