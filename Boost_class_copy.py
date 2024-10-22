@@ -33,6 +33,7 @@ class Boost:
         self.slave_address = 0x6c
         self.sdwn_measurements = []
         self.vbso_measurements = []
+        self.vbat_measurements = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -179,6 +180,8 @@ class Boost:
                 self.supplies_8.outp_ON(channel=2)
             if re.match('Force__VBSO__3.6V'.lower(), instruction):
                 print('Force__VBSO__3.6V')
+                self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
+                sleep(0.2)
                 self.supplies_8.setVoltage(channel=1,voltage=3.6)
                 self.supplies_8.outp_ON(channel=1)
             if re.match('Force__SW__3.6V'.lower(), instruction):
@@ -217,6 +220,14 @@ class Boost:
                     print(self.vbso_measurements)
                     self.mcp2317.Switch(device_addr=0x23, row=7, col=1, Enable=False)
 
+                if re.search('vbat', signal_pin):
+                    self.mcp2317.Switch(device_addr=0x21, row=3, col=1, Enable=True)
+                    sleep(0.2)
+                    vbat = self.voltmeter.meas_V()
+                    self.vbat_measurements.append(vbat)
+                    print(self.vbat_measurements)
+                    self.mcp2317.Switch(device_addr=0x21, row=3, col=1, Enable=False)
+
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
@@ -226,7 +237,6 @@ class Boost:
                     bst_mirr = self.pa.getCurrent(channel=1)
                     print("bst_mirr = ", bst_mirr)
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=False)
-
         return 
 
     def force_signal(self,force_signal_instruction: {}):
@@ -243,22 +253,23 @@ class Boost:
                     self.pa.setVoltage(channel=1, voltage=signal_force)
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
-                if re.search('vbias', signal_name):
-                    self.supplies_8.setVoltage(channel=1, voltage=signal_force)
-                    self.supplies_8.outp_ON(channel=1)
-                    sleep(0.2)
-                if re.search('vbso', signal_name):
-                    self.supplies_8.setVoltage(channel=2, voltage=signal_force)
-                    self.supplies_8.outp_ON(channel=2)
-                    sleep(0.2)
                 if re.search('vbat',signal_name):
-                    self.supplies.setVoltage(channel=1, voltage = signal_force)
+                    self.supplies.setVoltage(channel=1, voltage=signal_force)
+                    sleep(0.1)
                     self.supplies.outp_ON(channel=1)
-                    sleep(0.2)
                 if re.search('vddio',signal_name):
-                    self.supplies.setVoltage(channel=2, voltage = signal_force)
+                    self.supplies.setVoltage(channel=2, voltage=signal_force)
+                    sleep(0.1)
                     self.supplies.outp_ON(channel=2)
-                    sleep(0.2)
+                if re.search('vbso',signal_name):
+                    self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
+                    self.supplies_8.setVoltage(channel=1, voltage=signal_force)
+                    sleep(0.1)
+                    self.supplies_8.outp_ON(channel=1)
+                if re.search('vbias',signal_name):
+                    self.supplies_8.setVoltage(channel=2, voltage=signal_force)
+                    sleep(0.1)
+                    self.supplies_8.outp_ON(channel=2)
 
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
@@ -271,6 +282,8 @@ class Boost:
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
                 if re.search('vbso',signal_name):
+                    self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= False)
+                    sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=7, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
@@ -278,27 +291,33 @@ class Boost:
                     self.pa.setCurrent(channel=1,current=signal_force)
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
+                    
             force_signal_instruction = None
 
     def calculate_signal(self, calculate_signal_instruction:{}):
             if calculate_signal_instruction:
-                signal_name = calculate_signal_instruction.get('Signal')
+                signal_name = calculate_signal_instruction.get('Parameter')
                 print(signal_name)
-                if re.search('tswitchls', signal_name):
+                if re.search('ronls', signal_name):
                     TSwitch_SW = self.sdwn_measurements[0]
                     print(TSwitch_SW)
                     TSwitch_GND = self.sdwn_measurements[1]
                     print(TSwitch_GND)
                     ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
                     print("RON_LS value: " , ron_ls)
-                if re.search('tsswitchhs', signal_name):
+                if re.search('ronhs', signal_name):
                     TSwitch_SW2 = self.sdwn_measurements[2]
                     print(TSwitch_SW2)
                     TSwitch_vbso = self.vbso_measurements[0]
                     print(TSwitch_vbso)
                     ron_hs = ((TSwitch_vbso - TSwitch_SW2)/ (100e-3) )
                     print("RON_HS value: " , ron_hs)
-
+                if re.search('ronbyp', signal_name):
+                    vbat = self.vbat_measurements[0]
+                    vbso_byp = self.vbso_measurements[0]
+                    print(vbso_byp)
+                    ron_byp = ((vbat - vbso_byp)/ (100e-3) )
+                    print("RON_BYP value: " , ron_byp)
 
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')

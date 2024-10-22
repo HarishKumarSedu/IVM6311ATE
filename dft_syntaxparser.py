@@ -715,22 +715,32 @@ class Parser:
         return instruction
     # Procedure__extract(instruction)
 
+
     def extract_calculation_instruction(self, instruction: str):
         calc_signal = {}
 
-        # Usa una regex per trovare il testo tra la prima e la seconda doppia sottolineatura
-        match = re.search(r'__(.*?)__', instruction)
+        # Rimuovi la parte tra virgolette (descrizione)
+        instruction = re.sub(r'"[^"]*"', '', instruction).strip()
+
+        # Usa una regex per dividere la stringa su doppie sottolineature
+        parts = re.split(r'__', instruction)
         
-        if match:
-            signal_name = match.group(1)  # Estrae la parte tra le due doppie sottolineature
+        if len(parts) == 3:
+            # Estrai i tre elementi
+            calc_name = parts[0]    # "Calculate"
+            signal_name = parts[1]  # "diff"
+            operation_name = parts[2]  # "RONBYP"
             
             calc_signal = {
-                'Signal': signal_name
+                'Calculation': calc_name,
+                'Operation': signal_name,
+                'Parameter': operation_name
             }
         else:
-            print("Errore: Nessun segnale trovato nella stringa.")
+            print("Errore: Stringa non valida.")
 
         return calc_signal
+
 
 
     def value_clean(self,value:str):
@@ -749,6 +759,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_calculation_instruction('Calculate__TSwitchSW1__TSwitchPGND'))
+    print(parser.extract_calculation_instruction('Calculate__diff__RONBYP'))
     # print(parser.value_clean('2ma'))
     
