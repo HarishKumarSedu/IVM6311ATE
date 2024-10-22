@@ -32,6 +32,7 @@ class Boost:
         self.ammeter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
         self.slave_address = 0x6c
         self.sdwn_measurements = []
+        self.vbso_measurements = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -269,6 +270,13 @@ class Boost:
                 signal_name = calculate_signal_instruction.get('Signal')
                 print(signal_name)
                 if re.search('tswitchsw1', signal_name):
+                    TSwitch_SW = self.sdwn_measurements[0]
+                    print(TSwitch_SW)
+                    TSwitch_GND = self.sdwn_measurements[1]
+                    print(TSwitch_GND)
+                    ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
+                    print("RON_LS value: " , ron_ls)
+                if re.search('tswitchsw2', signal_name):
                     TSwitch_SW = self.sdwn_measurements[0]
                     print(TSwitch_SW)
                     TSwitch_GND = self.sdwn_measurements[1]
