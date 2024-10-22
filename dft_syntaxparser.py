@@ -715,6 +715,24 @@ class Parser:
         return instruction
     # Procedure__extract(instruction)
 
+    def extract_calculation_instruction(self, instruction: str):
+        calc_signal = {}
+
+        # Usa una regex per trovare il testo tra la prima e la seconda doppia sottolineatura
+        match = re.search(r'__(.*?)__', instruction)
+        
+        if match:
+            signal_name = match.group(1)  # Estrae la parte tra le due doppie sottolineature
+            
+            calc_signal = {
+                'Signal': signal_name
+            }
+        else:
+            print("Errore: Nessun segnale trovato nella stringa.")
+
+        return calc_signal
+
+
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
         # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
@@ -731,6 +749,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_RegisterAddress__Instruction('0xB3[4:3]_0x00 "en 3 bst low"'))
+    print(parser.extract_calculation_instruction('Calculate__TSwitchSW1__TSwitchPGND'))
     # print(parser.value_clean('2ma'))
     

@@ -31,6 +31,7 @@ class Boost:
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.ammeter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
         self.slave_address = 0x6c
+        self.sdwn_measurements = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -158,6 +159,7 @@ class Boost:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                self.pa.setVoltage(channel=4,voltage=0)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
@@ -187,30 +189,37 @@ class Boost:
                 SW_pin= self.voltmeter.meas_V()
                 if(SW_pin - SW_target) <= tollerance:
                     print("SW is shorted on VBAT")
+                    sleep(0.5)
+                    self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
                 else:
                     input("Shorted SW with the jumper on the board, or connected SW to a supply")
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
             signal_Unit = measure_signal.get('Unit')
-            measure_values = []
             print(signal_Unit)
             if re.search('voltage', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
-                    measure_value = self.voltmeter.meas_V()
-                    measure_values.append(measure_value)
-                    print(measure_values)
+                    sdwn = self.voltmeter.meas_V()
+                    self.sdwn_measurements.append(sdwn)
+                    print(self.sdwn_measurements)
+
+                if re.search('vbso',signal_pin):
+                    self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
+                    ron_voltage = self.voltmeter.meas_V()
+
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
                     self.mcp2317.Switch(device_addr=0x20, row=1, col=7, Enable=True)
                     sleep(0.5)
-                    # self.pa.setRange_Current(channel =1, voltageRange= 1*10**(-6))
                     self.pa.setMeter_Range_Auto__Current(channel=1,Curr_range='1e-6')
                     bst_mirr = self.pa.getCurrent(channel=1)
                     print("bst_mirr = ", bst_mirr)
+
+        return 
 
     def force_signal(self,force_signal_instruction: {}):
         if force_signal_instruction:
@@ -227,24 +236,44 @@ class Boost:
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
                 if re.search('vbias', signal_name):
-                    self.mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
-                    sleep(0.5)
                     self.supplies_8.setVoltage(channel=1, voltage=signal_force)
                     self.supplies_8.outp_ON(channel=1)
+                    sleep(0.2)
                 if re.search('vbso', signal_name):
-                    self.mcp2317.Switch(device_addr=0x23, row=7, col=6, Enable=True)
-                    sleep(0.5)
                     self.supplies_8.setVoltage(channel=2, voltage=signal_force)
                     self.supplies_8.outp_ON(channel=2)
+                    sleep(0.2)
+                if re.search('vbat',signal_name):
+                    self.supplies.setVoltage(channel=1, voltage = signal_force)
+                    self.supplies.outp_ON(channel=1)
+                    sleep(0.2)
+                if re.search('vddio',signal_name):
+                    self.supplies.setVoltage(channel=2, voltage = signal_force)
+                    self.supplies.outp_ON(channel=2)
+                    sleep(0.2)
+
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sw',signal_name):
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
-                    self.pa.setCurrent(channel=1, current= signal_force)
-                    sleep(0.1)
-
+                    self.pa.emulMode_2Q(channel=1)
+                    self.pa.setCurrent_Priority(channel=1)
+                    self.pa.setCurrent(channel=1,current=signal_force)
+                    self.pa.outp_ON(channel=1)
+                    sleep(0.2)
             force_signal_instruction = None
+
+    def calculate_signal(self, calculate_signal_instruction:{}):
+            if calculate_signal_instruction:
+                signal_name = calculate_signal_instruction.get('Signal')
+                print(signal_name)
+                if re.search('TSwitchSW1', signal_name):
+                    TSwitch_SW = self.sdwn_measurements[0]
+                    TSwitch_GND = self.sdwn_measurements[1]
+                    ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
+                    print("RON_LS value: " , ron_ls)
+
 
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
@@ -279,6 +308,11 @@ class Boost:
                 measure_signal = self.parser.extract_Measure__Instruction(instruction)
                 print(f'Measure Signal : {measure_signal}')
                 self.measure_value_check(measure_signal=measure_signal, typical=typical)
+            if re.match('calculate',instruction):
+                calculate_signal_instruction = self.parser.extract_calculation_instruction(instruction)
+                print(f'Calculate Signal : {calculate_signal_instruction}')
+                self.calculate_signal(calculate_signal_instruction)
+                
 
 
 if __name__ == '__main__':
