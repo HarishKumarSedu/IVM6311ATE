@@ -22,6 +22,7 @@ class Boost:
         self.data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Boost')
         self.procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
         self.mcp = MCP2221()
+        self.scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
         self.mcp2317 = MCP2317(mcp=self.mcp)
         self.pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
@@ -34,6 +35,7 @@ class Boost:
         self.sdwn_measurements = []
         self.vbso_measurements = []
         self.vbat_measurements = []
+        self.vfsyn_measurements = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -232,6 +234,17 @@ class Boost:
                     print(self.vbat_measurements)
                     self.mcp2317.Switch(device_addr=0x21, row=3, col=1, Enable=False)
 
+                if re.search('fsyn', signal_pin):
+                    self.scope.set_HScale('100E-6')
+                    sleep(0.5)
+                    # self.scope.set_autoSet()
+                    # self.scope.set_trigger__mode(mode='NORM')
+                    self.scope.set_HScale('10E-6')
+                    self.scope.set_Channel__VScale(scale=0.5)
+                    vfsyn = self.scope.Meas_Amp(channel=2, Meas= 'Meas2')
+                    self.vfsyn_measurements.append(vfsyn)
+                    print(self.vfsyn_measurements)
+
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
                 if re.search('sdwn',signal_pin):
@@ -364,9 +377,17 @@ class Boost:
                 calculate_signal_instruction = self.parser.extract_calculation_instruction(instruction)
                 print(f'Calculate Signal : {calculate_signal_instruction}')
                 self.calculate_signal(calculate_signal_instruction)
+
+    def power_off(self):
+        self.pa.outp_OFF(channel=4)
+        self.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        self.supplies.outp_OFF(channel=2)
+        sleep(0.1)
+        self.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        self.supplies_8.outp_OFF(channel=2)
                 
-
-
 if __name__ == '__main__':
     boost = Boost()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
@@ -405,14 +426,7 @@ if __name__ == '__main__':
         for i in range (0x20,0x27):
             sleep(0.5)
             boost.mcp2317.Switch_reset(device_addr=i)
-        boost.pa.outp_OFF(channel=4)
-        boost.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies.outp_OFF(channel=2)
-        sleep(0.1)
-        boost.supplies_8.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies_8.outp_OFF(channel=2)
+        boost.power_off()
         pass 
 
     except KeyboardInterrupt:
@@ -420,14 +434,7 @@ if __name__ == '__main__':
             for i in range(0x20, 0x27):
                 sleep(0.5)
                 boost.mcp2317.Switch_reset(device_addr=i)
-            boost.pa.outp_OFF(channel=4)
-            boost.supplies.outp_OFF(channel=1)
-            sleep(0.5)
-            boost.supplies.outp_OFF(channel=2)
-            sleep(0.1)
-            boost.supplies_8.outp_OFF(channel=1)
-            sleep(0.5)
-            boost.supplies_8.outp_OFF(channel=2)
+            boost.power_off()
         except KeyboardInterrupt:
             print("Interruzione forzata durante il blocco di cleanup")
             raise  
@@ -438,23 +445,9 @@ if __name__ == '__main__':
         for i in range (0x20,0x27):
             sleep(0.5)
             boost.mcp2317.Switch_reset(device_addr=i)
-        boost.pa.outp_OFF(channel=4)
-        boost.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies.outp_OFF(channel=2)
-        sleep(0.1)
-        boost.supplies_8.outp_OFF(channel=1)
-        sleep(0.5)
-        boost.supplies_8.outp_OFF(channel=2)
+        boost.power_off()
 for i in range (0x20,0x27):
     sleep(0.5)
     boost.mcp2317.Switch_reset(device_addr=i)
-boost.pa.outp_OFF(channel=1)
-boost.pa.outp_OFF(channel=4)
-sleep(0.1)
-boost.supplies.outp_OFF(channel=1)
-boost.supplies.outp_OFF(channel=2)
-sleep(0.1)
-boost.supplies_8.outp_OFF(channel=1)
-boost.supplies_8.outp_OFF(channel=2)
+boost.power_off()
 

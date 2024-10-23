@@ -120,7 +120,6 @@ class dpo_2014B:
         # self.scope.write(f'MEASUREMENT:IMMED:SOURCE {channel}')
         self.scope.write(f'MEASUrement:{Meas}:TYPE MEAN')
         return float(self.scope.query(f'MEASUrement:{Meas}:VALUE?'))
-    
 
     def openchoice_screenshot(self,file_path=''):
         app = Application(backend='win32').connect(title='OpenChoice Desktop')
@@ -142,11 +141,9 @@ class dpo_2014B:
 
 if __name__ == '__main__':
     scope = dpo_2014B('USB0::0x0699::0x0401::C020132::INSTR')
-    scope.openchoice_screenshot('C:\\Users\\invlab\\Documents\\IVM6311ATE\\IVM6311ATE\\screenshot.png')
-   
+    # scope.openchoice_screenshot('C:\\Users\\invlab\\Documents\\IVM6311ATE\\IVM6311ATE\\screenshot.png')
     # # print(scope.meas_Freq())
     # # print(scope.get_error())
-
     # # scope.set_trigger__mode(mode='AUTO')
     # # scope.scope.write('ACQUIRE:STATE OFF')
     # scope.set_trigger__mode(mode='NORM')
