@@ -36,6 +36,7 @@ class Boost:
         self.vbso_measurements = []
         self.vbat_measurements = []
         self.vfsyn_measurements = []
+        self.vsdi_measurements = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -239,9 +240,15 @@ class Boost:
                     self.scope.set_Channel__VScale(scale=0.5)
                     sleep(0.2)
                     vfsyn = self.scope.Meas_Max(channel='CH2',Meas='MEAS2')
-                    print(vfsyn)
                     self.vfsyn_measurements.append(vfsyn)
-                    print(self.vfsyn_measurements[-1])
+                    print("FSYN voltage: " ,self.vfsyn_measurements[-1])
+                if re.search('sdi', signal_pin):
+                    self.scope.set_HScale('200E-9')
+                    self.scope.set_Channel__VScale(scale=0.5)
+                    sleep(0.2)
+                    vsdi = self.scope.Meas_Max(channel='CH1',Meas='MEAS3')
+                    self.vsdi_measurements.append(vsdi)
+                    print("SDI voltage: ",self.vsdi_measurements[-1])
 
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')
