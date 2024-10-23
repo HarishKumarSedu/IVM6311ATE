@@ -235,15 +235,13 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x21, row=3, col=1, Enable=False)
 
                 if re.search('fsyn', signal_pin):
-                    self.scope.set_HScale('100E-6')
-                    sleep(0.5)
-                    # self.scope.set_autoSet()
-                    # self.scope.set_trigger__mode(mode='NORM')
-                    self.scope.set_HScale('10E-6')
+                    self.scope.set_HScale('200E-9')
                     self.scope.set_Channel__VScale(scale=0.5)
-                    vfsyn = self.scope.Meas_Amp(channel=2, Meas= 'Meas2')
+                    sleep(0.2)
+                    vfsyn = self.scope.Meas_Max(channel='CH2',Meas='MEAS2')
+                    print(vfsyn)
                     self.vfsyn_measurements.append(vfsyn)
-                    print(self.vfsyn_measurements)
+                    print(self.vfsyn_measurements[-1])
 
             if re.search('current', signal_Unit):
                 signal_pin = measure_signal.get('Signal')

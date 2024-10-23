@@ -18,7 +18,7 @@ class dpo_2014B:
         self.scope.write_termination = '\n'
 
         # self.reset()
-
+    @property
     def get_IDN(self):
         return (self.scope.query('*IDN?'))
 
@@ -115,6 +115,12 @@ class dpo_2014B:
         self.scope.write(f'MEASUrement:{Meas}:TYPE AMPLITUDE')
         return float(self.scope.query(f'MEASUrement:{Meas}:VALUE?'))
     
+    def Meas_Max(self,channel='CH1',Meas='MEAS1'):
+        self.scope.write('MEASUREMENT:IMMED:TYPE MAX')
+        self.scope.write(f'MEASUREMENT:IMMED:SOURCE {channel}')
+        self.scope.write(f'MEASUrement:{Meas}:TYPE MAX')
+        return float(self.scope.query(f'MEASUrement:{Meas}:VALUE?'))
+    
     def Meas_Mean(self,channel='CH1',Meas='MEAS1'):
         # self.scope.write('MEASUREMENT:IMMED:TYPE AMPLITUDE')
         # self.scope.write(f'MEASUREMENT:IMMED:SOURCE {channel}')
@@ -140,9 +146,10 @@ class dpo_2014B:
         #dlg.close()
 
 if __name__ == '__main__':
-    scope = dpo_2014B('USB0::0x0699::0x0401::C020132::INSTR')
+    scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
     # scope.openchoice_screenshot('C:\\Users\\invlab\\Documents\\IVM6311ATE\\IVM6311ATE\\screenshot.png')
-    # # print(scope.meas_Freq())
+    print(scope.get_IDN)
+    print(scope.Meas_Max(channel='CH2',Meas='MEAS2'))
     # # print(scope.get_error())
     # # scope.set_trigger__mode(mode='AUTO')
     # # scope.scope.write('ACQUIRE:STATE OFF')
