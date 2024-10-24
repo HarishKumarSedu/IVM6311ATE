@@ -740,8 +740,32 @@ class Parser:
             print("Errore: Stringa non valida.")
 
         return calc_signal
-
-
+    
+    def extract_wait_instruction(self, instruction: str):
+        
+        delay_info = {}
+        
+        # Usa una regex per dividere la stringa su doppie sottolineature
+        parts = re.split(r'__', instruction)
+        
+        if len(parts) == 3:
+            # Estrai i tre elementi
+            action = parts[0]  # "Wait"
+            delay_type = parts[1]  # "delay"
+            delay_value = parts[2]  # "0.1ms"
+            
+            # Usa una regex per estrarre solo il valore numerico del delay
+            match = re.search(r'(\d+(\.\d+)?)', delay_value)
+            if match:
+                delay = match.group(1)  # Estrae solo il valore numerico senza "ms"
+                delay_info = {
+                    'Action': action,
+                    'Type': delay_type,
+                    'Delay': delay
+                }
+            else:
+                print("Errore: Il valore del delay non è valido.")
+        return delay_info
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -759,6 +783,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_calculation_instruction('Calculate__diff__RONBYP'))
+    print(parser.extract_wait_instruction('Wait__delay__0.1ms'))
     # print(parser.value_clean('2ma'))
     

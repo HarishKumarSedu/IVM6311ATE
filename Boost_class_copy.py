@@ -359,6 +359,12 @@ class Boost:
                     ron_byp = ((vbat - vbso_byp)/ (100e-3) )
                     print("RON_BYP value: " , ron_byp)
 
+    def waiting_function(self,waiting_instruction:{}):
+        if waiting_instruction:
+            waiting_time = waiting_instruction.get('Delay')
+            print(waiting_time)
+            sleep(waiting_time)
+
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
@@ -396,6 +402,10 @@ class Boost:
                 calculate_signal_instruction = self.parser.extract_calculation_instruction(instruction)
                 print(f'Calculate Signal : {calculate_signal_instruction}')
                 self.calculate_signal(calculate_signal_instruction)
+            if re.match('wait', instruction):
+                waiting_instruction = self.parser.extract_wait_instruction(instruction)
+                print(f'Wait : {waiting_instruction}')
+                self.waiting_function(waiting_instruction)
 
     def power_off(self):
         self.pa.outp_OFF(channel=4)
