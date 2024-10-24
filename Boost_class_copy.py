@@ -363,7 +363,7 @@ class Boost:
         if waiting_instruction:
             waiting_time = waiting_instruction.get('Delay')
             print(waiting_time)
-            sleep(waiting_time)
+            sleep(float(waiting_time))
 
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
