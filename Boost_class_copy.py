@@ -236,6 +236,8 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x21, row=3, col=1, Enable=False)
 
                 if re.search('fsyn', signal_pin):
+                    self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= False)
+                    sleep(0.5)
                     self.scope.set_HScale('200E-9')
                     self.scope.set_Channel__VScale(scale=0.5)
                     sleep(0.2)
