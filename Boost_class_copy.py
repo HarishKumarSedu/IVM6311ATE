@@ -25,7 +25,7 @@ class Boost:
         self.scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
         self.mcp2317 = MCP2317(mcp=self.mcp)
         self.pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
-        self.ps_gpib = E3648('GPIB0::6::INSTR')
+        self.ps_outpn = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
         self.supplies_8 = E3648('GPIB0::8::INSTR')
         self.parser = Parser()
@@ -360,9 +360,12 @@ class Boost:
 
     def forceramp_signal(self, forceramp_signal_instruction:{}):
         if forceramp_signal_instruction:
-            signal_name = forceramp_signal_instruction.get('Signal')
+            signal_name = forceramp_signal_instruction.get('Signal Type')
+            print(signal_name)
             start_voltage = forceramp_signal_instruction.get('Start Voltage')
+            print(start_voltage)
             end_voltage = forceramp_signal_instruction.get('End Voltage')
+            print(end_voltage)
             unit = forceramp_signal_instruction.get('Unit')
             if re.search('V', unit):
                 if re.search('vbso', signal_name):
@@ -404,7 +407,7 @@ class Boost:
                 print(f'Force Signal : {force_signal_instruction}')
                 self.force_signal(force_signal_instruction)
             if re.match('ramp', instruction):
-                print(instruction)
+                # print(instruction)
                 forceramp_signal_instruction = self.parser.extract_forceramp_instruction(instruction)
                 print(f'Forceramp Signal :{forceramp_signal_instruction}')
                 self.forceramp_signal(forceramp_signal_instruction)

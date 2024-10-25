@@ -769,7 +769,7 @@ class Parser:
     
     def extract_forceramp_instruction(self, instruction: str):
         signal_info = {}
-        
+            
         # Dividi la stringa su spazi e seleziona la prima parte
         main_part = instruction.split('"')[0].strip()  # Ottiene solo "Ramp__VBSO__4.5V__1V"
         
@@ -780,14 +780,14 @@ class Parser:
             # Estrai i tre elementi richiesti
             signal_type = parts[1]  # "VBSO"
             
-            # Usa regex per separare i valori numerici e l'unità 'V'
-            match_start = re.search(r'(\d+(\.\d+)?)(V)$', parts[2])
-            match_end = re.search(r'(\d+(\.\d+)?)(V)$', parts[3])
+            # Usa regex per separare i valori numerici e l'unità 'V' o 'v'
+            match_start = re.search(r'(\d+(\.\d+)?)([Vv])$', parts[2])
+            match_end = re.search(r'(\d+(\.\d+)?)([Vv])$', parts[3])
             
             if match_start and match_end:
-                start_voltage = match_start.group(1)  # Solo valore numerico "4.5"
-                end_voltage = match_end.group(1)      # Solo valore numerico "1"
-                unit = match_start.group(3)           # Unità di misura "V"
+                start_voltage = float(match_start.group(1))  # Converte in float
+                end_voltage = float(match_end.group(1))      # Converte in float
+                unit = match_start.group(3).upper()          # Unità di misura sempre in maiuscolo "V"
                 
                 # Costruisci il dizionario con le informazioni estratte
                 signal_info = {
@@ -800,7 +800,7 @@ class Parser:
                 print("Errore: Il formato dei valori di tensione non è valido.")
                 
         return signal_info
-        
+            
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
         # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
