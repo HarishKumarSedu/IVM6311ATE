@@ -18,6 +18,7 @@ AZ_COMP:
   - VCM_AVDD
 
 Boost:
+  - BST_ZC
   - BST_BOOTSTRAP
   - BST_ENV_ERR
   - BST_OCP

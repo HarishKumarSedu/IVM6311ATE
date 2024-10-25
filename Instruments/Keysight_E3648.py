@@ -3,6 +3,7 @@ import pyvisa as visa
 from pyvisa.attributes import *
 from pyvisa.constants import *
 from time import sleep
+import numpy as np
 
 
 class E3648:
@@ -57,6 +58,16 @@ class E3648:
         self.supply.write(f'INSTrument:NSELect {str(channel)}')
         return self.supply.write('OUTPut:STATe OFF')
     
+    def decresing_Ramp(self,channel=1, start_voltage = 4.5, end_voltage = 1 ):
+        self.setVoltage(channel=channel, voltage = start_voltage)
+        self.outp_ON(channel=1)
+        voltage = start_voltage
+        step = 0.250
+        while voltage >= end_voltage:
+            print(voltage)
+            voltage = voltage - step
+            self.setVoltage(channel=channel, voltage = voltage)
+    
     class OutputControl:
         def __init__(self, port='GPIB0::7::INSTR') -> None:
             self.supply = E3648(port).supply  
@@ -82,12 +93,13 @@ class E3648:
             
 
 if __name__ == '__main__':
-    supply = E3648(port='GPIB0::5::INSTR')
+    supply = E3648(port='GPIB0::8::INSTR')
+    supply.decresing_Ramp(channel=1, start_voltage=4.5, end_voltage=1)
     # print(supply.get__IDN)
     # supply.setRange(channel=2, range=1)
     # supply.setVoltage(channel=2,voltage=14) 
     # supply.setCurrent(channel=2,current=0.5) 
-    supply.outp_OFF(channel=1)
-    supply.outp_ON(channel=1)
+    # supply.outp_OFF(channel=1)
+    # supply.outp_ON(channel=1)
     # supply.setCurrent(current=0.5) 
     # print(supply.meas_Voltage())
