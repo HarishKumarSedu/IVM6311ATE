@@ -403,7 +403,8 @@ class Boost:
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
                 print(f'Force Signal : {force_signal_instruction}')
                 self.force_signal(force_signal_instruction)
-            if re.match('forceramp', instruction):
+            if re.match('ramp', instruction):
+                print(instruction)
                 forceramp_signal_instruction = self.parser.extract_forceramp_instruction(instruction)
                 print(f'Forceramp Signal :{forceramp_signal_instruction}')
                 self.forceramp_signal(forceramp_signal_instruction)

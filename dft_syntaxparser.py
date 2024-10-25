@@ -770,11 +770,14 @@ class Parser:
     def extract_forceramp_instruction(self, instruction: str):
         signal_info = {}
         
-        # Dividi la stringa sulle doppie sottolineature
-        parts = re.split(r'__', instruction)
+        # Dividi la stringa su spazi e seleziona la prima parte
+        main_part = instruction.split('"')[0].strip()  # Ottiene solo "Ramp__VBSO__4.5V__1V"
+        
+        # Dividi ulteriormente usando le doppie sottolineature per estrarre i valori
+        parts = re.split(r'__', main_part)
         
         if len(parts) == 4:
-            # Estrai gli elementi richiesti
+            # Estrai i tre elementi richiesti
             signal_type = parts[1]  # "VBSO"
             
             # Usa regex per separare i valori numerici e l'unità 'V'
@@ -788,7 +791,7 @@ class Parser:
                 
                 # Costruisci il dizionario con le informazioni estratte
                 signal_info = {
-                    'Signal': signal_type,
+                    'Signal Type': signal_type,
                     'Start Voltage': start_voltage,
                     'End Voltage': end_voltage,
                     'Unit': unit
@@ -814,6 +817,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_forceramp_instruction('Forceramp__VBSO__4.5V__1V'))
+    print(parser.extract_forceramp_instruction('Ramp__VBSO__4.5V__1V "decrease VBSO from 4.5V with steps of 50mV untill FSYN and SDI toggle from Low to High"'))
     # print(parser.value_clean('2ma'))
     

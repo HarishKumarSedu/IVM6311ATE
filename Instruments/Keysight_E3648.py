@@ -66,6 +66,7 @@ class E3648:
         while voltage >= end_voltage:
             print(voltage)
             voltage = voltage - step
+            sleep(0.5)
             self.setVoltage(channel=channel, voltage = voltage)
     
     class OutputControl:
