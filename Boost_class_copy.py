@@ -307,7 +307,6 @@ class Boost:
                     self.pa.outp_ON(channel=1)
                     sleep(0.5)
 
-
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sw',signal_name):
@@ -335,29 +334,39 @@ class Boost:
             force_signal_instruction = None
 
     def calculate_signal(self, calculate_signal_instruction:{}):
-            if calculate_signal_instruction:
-                signal_name = calculate_signal_instruction.get('Parameter')
-                print(signal_name)
-                if re.search('ronls', signal_name):
-                    TSwitch_SW = self.sdwn_measurements[0]
-                    print(TSwitch_SW)
-                    TSwitch_GND = self.sdwn_measurements[1]
-                    print(TSwitch_GND)
-                    ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
-                    print("RON_LS value: " , ron_ls)
-                if re.search('ronhs', signal_name):
-                    TSwitch_SW2 = self.sdwn_measurements[2]
-                    print(TSwitch_SW2)
-                    TSwitch_vbso = self.vbso_measurements[0]
-                    print(TSwitch_vbso)
-                    ron_hs = ((TSwitch_vbso - TSwitch_SW2)/ (100e-3) )
-                    print("RON_HS value: " , ron_hs)
-                if re.search('ronbyp', signal_name):
-                    vbat = self.vbat_measurements[0]
-                    vbso_byp = self.vbso_measurements[1]
-                    print(vbso_byp)
-                    ron_byp = ((vbat - vbso_byp)/ (100e-3) )
-                    print("RON_BYP value: " , ron_byp)
+        if calculate_signal_instruction:
+            signal_name = calculate_signal_instruction.get('Parameter')
+            print(signal_name)
+            if re.search('ronls', signal_name):
+                TSwitch_SW = self.sdwn_measurements[0]
+                print(TSwitch_SW)
+                TSwitch_GND = self.sdwn_measurements[1]
+                print(TSwitch_GND)
+                ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
+                print("RON_LS value: " , ron_ls)
+            if re.search('ronhs', signal_name):
+                TSwitch_SW2 = self.sdwn_measurements[2]
+                print(TSwitch_SW2)
+                TSwitch_vbso = self.vbso_measurements[0]
+                print(TSwitch_vbso)
+                ron_hs = ((TSwitch_vbso - TSwitch_SW2)/ (100e-3) )
+                print("RON_HS value: " , ron_hs)
+            if re.search('ronbyp', signal_name):
+                vbat = self.vbat_measurements[0]
+                vbso_byp = self.vbso_measurements[1]
+                print(vbso_byp)
+                ron_byp = ((vbat - vbso_byp)/ (100e-3) )
+                print("RON_BYP value: " , ron_byp)
+
+    def forceramp_signal(self, forceramp_signal_instruction:{}):
+        if forceramp_signal_instruction:
+            signal_name = forceramp_signal_instruction.get('Signal')
+            start_voltage = forceramp_signal_instruction.get('Start Voltage')
+            end_voltage = forceramp_signal_instruction.get('End Voltage')
+            unit = forceramp_signal_instruction.get('Unit')
+            if re.search('V', unit):
+                if re.search('vbso', signal_name):
+                    self.supplies_8.decresing_Ramp(channel=1,start_voltage=start_voltage,end_voltage=end_voltage)
 
     def waiting_function(self,waiting_instruction:{}):
         if waiting_instruction:
@@ -394,6 +403,10 @@ class Boost:
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
                 print(f'Force Signal : {force_signal_instruction}')
                 self.force_signal(force_signal_instruction)
+            if re.match('forceramp', instruction):
+                forceramp_signal_instruction = self.parser.extract_forceramp_instruction(instruction)
+                print(f'Forceramp Signal :{forceramp_signal_instruction}')
+                self.forceramp_signal(forceramp_signal_instruction)
             if re.match('measure', instruction):
                 measure_signal = self.parser.extract_Measure__Instruction(instruction)
                 print(f'Measure Signal : {measure_signal}')

@@ -766,7 +766,38 @@ class Parser:
             else:
                 print("Errore: Il valore del delay non è valido.")
         return delay_info
-
+    
+    def extract_forceramp_instruction(self, instruction: str):
+        signal_info = {}
+        
+        # Dividi la stringa sulle doppie sottolineature
+        parts = re.split(r'__', instruction)
+        
+        if len(parts) == 4:
+            # Estrai gli elementi richiesti
+            signal_type = parts[1]  # "VBSO"
+            
+            # Usa regex per separare i valori numerici e l'unità 'V'
+            match_start = re.search(r'(\d+(\.\d+)?)(V)$', parts[2])
+            match_end = re.search(r'(\d+(\.\d+)?)(V)$', parts[3])
+            
+            if match_start and match_end:
+                start_voltage = match_start.group(1)  # Solo valore numerico "4.5"
+                end_voltage = match_end.group(1)      # Solo valore numerico "1"
+                unit = match_start.group(3)           # Unità di misura "V"
+                
+                # Costruisci il dizionario con le informazioni estratte
+                signal_info = {
+                    'Signal': signal_type,
+                    'Start Voltage': start_voltage,
+                    'End Voltage': end_voltage,
+                    'Unit': unit
+                }
+            else:
+                print("Errore: Il formato dei valori di tensione non è valido.")
+                
+        return signal_info
+        
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
         # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
@@ -783,6 +814,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_wait_instruction('Wait__delay__0.1ms'))
+    print(parser.extract_forceramp_instruction('Forceramp__VBSO__4.5V__1V'))
     # print(parser.value_clean('2ma'))
     
