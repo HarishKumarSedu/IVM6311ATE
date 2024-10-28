@@ -143,7 +143,6 @@ class Boost:
         if data_value < bit_width:
             # Create the mask for the bit width, ensuring that mask and lsb are integers
             mask = ~((bit_width - 1) << int(lsb))
-            # Ensure `device_data` and `mask` are integers
             device_data = int(device_data)
             mask = int(mask)
             # Perform bitwise operations
@@ -240,14 +239,14 @@ class Boost:
                     sleep(0.5)
                     self.scope.set_HScale('200E-9')
                     self.scope.set_Channel__VScale(scale=0.5)
-                    sleep(0.2)
+                    sleep(0.5)
                     vfsyn = self.scope.Meas_Max(channel='CH2',Meas='MEAS2')
                     self.vfsyn_measurements.append(vfsyn)
                     print("FSYN voltage: " ,self.vfsyn_measurements[-1])
                 if re.search('sdi', signal_pin):
                     self.scope.set_HScale('200E-9')
                     self.scope.set_Channel__VScale(scale=0.5)
-                    sleep(0.2)
+                    sleep(0.5)
                     vsdi = self.scope.Meas_Max(channel='CH1',Meas='MEAS3')
                     self.vsdi_measurements.append(vsdi)
                     print("SDI voltage: ",self.vsdi_measurements[-1])
@@ -442,21 +441,32 @@ class Boost:
         self.supplies_8.outp_OFF(channel=1)
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
+
+    def power_on(self):
+        self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+        self.supplies_8.setVoltage(channel=1, voltage=5)
+        self.supplies_8.setCurrent(channel=1, current=0.2)
+        self.supplies_8.outp_ON(channel=1)
+        sleep(0.5)
+        self.supplies_8.setVoltage(channel=2, voltage=3.6)
+        self.supplies_8.setCurrent(channel=2, current=0.2)
+        self.supplies_8.outp_ON(channel=2)
+        sleep(0.5)
+        self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
+        self.pa.setVoltage(channel=4,voltage=1.8)
+        self.pa.outp_ON(channel=4)
+    
+    def hw_reset(self):
+        boost.mcp.mcpWrite(SlaveAddress=0x6C, data=[0xFE, 0x00])      
+        boost.mcp.mcpWrite(SlaveAddress=0x6C, data=[0x01, 0x01])   
+        boost.pa.outp_OFF(channel=1)
+        boost.pa.emulMode_2Q(channel=1)
+        boost.pa.setVoltage_Priority(channel=1)
+
                 
 if __name__ == '__main__':
     boost = Boost()
-    output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    boost.supplies_8.setVoltage(channel=1, voltage=5)
-    boost.supplies_8.setCurrent(channel=1, current=0.2)
-    boost.supplies_8.outp_ON(channel=1)
-    sleep(0.5)
-    boost.supplies_8.setVoltage(channel=2, voltage=3.6)
-    boost.supplies_8.setCurrent(channel=2, current=0.2)
-    boost.supplies_8.outp_ON(channel=2)
-    sleep(0.5)
-    output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
-    boost.pa.setVoltage(channel=4,voltage=1.8)
-    boost.pa.outp_ON(channel=4)
+    boost.power_on
     boost_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Boost')
     tests = boost.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
@@ -465,10 +475,14 @@ if __name__ == '__main__':
             for i in range (0x20,0x27):
                 sleep(0.5)
                 boost.mcp2317.Switch_reset(device_addr=i)
-            boost.pa.outp_OFF(channel=1)
-            boost.pa.emulMode_2Q(channel=1)
-            boost.pa.setVoltage_Priority(channel=1)
             sleep(0.1)
+            boost.power_off()
+            sleep(0.2)
+            boost.power_on()
+            sleep(0.5)
+            boost.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
+            sleep(0.3) 
+            boost.hw_reset()
             print(f'............ {test}')
             boost.boost_DFT(boost_data, test)
     except  TypeError as e:
