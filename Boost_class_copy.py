@@ -235,11 +235,11 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x21, row=3, col=1, Enable=False)
 
                 if re.search('fsyn', signal_pin):
-                    self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= False)
+                    # self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= False)
                     sleep(0.5)
                     self.scope.set_HScale('200E-9')
                     self.scope.set_Channel__VScale(scale=0.5)
-                    sleep(0.5)
+                    sleep(3)
                     vfsyn = self.scope.Meas_Max(channel='CH2',Meas='MEAS2')
                     self.vfsyn_measurements.append(vfsyn)
                     print("FSYN voltage: " ,self.vfsyn_measurements[-1])
@@ -318,14 +318,23 @@ class Boost:
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sw',signal_name):
-                    self.pa.outp_OFF(channel=1)
+                    # self.pa.outp_OFF(channel=1)
                     sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
                     self.pa.setCurrent_Priority(channel=1)
+                    # self.pa.setCurrent(channel=1,current=0.05)
+                    # sleep(1)
+                    # self.pa.setCurrent(channel=1,current=0.1)
+                    # sleep(1)
+                    # self.pa.setCurrent(channel=1,current=0.15)
+                    # sleep(1)
+                    # self.pa.setCurrent(channel=1,current=0.2)
+                    # sleep(1)
+                    # self.pa.setCurrent(channel=1,current=0.21)
+                    # sleep(1)
                     self.pa.setCurrent(channel=1,current=signal_force)
-                    sleep(0.2)
                     self.pa.outp_ON(channel=1)
                     sleep(0.5)
                 if re.search('vbso',signal_name):
@@ -434,6 +443,7 @@ class Boost:
 
     def power_off(self):
         self.pa.outp_OFF(channel=4)
+        self.pa.outp_OFF(channel=1)
         self.supplies.outp_OFF(channel=1)
         sleep(0.5)
         self.supplies.outp_OFF(channel=2)

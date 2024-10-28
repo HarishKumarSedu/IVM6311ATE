@@ -252,6 +252,7 @@ class Reference:
 if __name__ == '__main__':
     ref = Reference()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+    
     output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
     ref.meter.setVoltage(channel=4,voltage=1.8)
     ref.meter.outp_ON(channel=4)
