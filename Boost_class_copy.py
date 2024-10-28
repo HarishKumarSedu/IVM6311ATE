@@ -295,15 +295,15 @@ class Boost:
                     sleep(0.1)
                     self.supplies_8.outp_ON(channel=2)
                 if re.search('sw', signal_name):
-                    self.pa.outp_OFF(channel=1)
+                    self.pa.outp_OFF(channel=3)
                     sleep(0.2)
-                    self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
+                    self.mcp2317.Switch(device_addr=0x23, row=8, col=6, Enable=True)
                     sleep(0.5)
-                    self.pa.emulMode_2Q(channel=1)
-                    self.pa.setVoltage_Priority(channel=1)
-                    self.pa.setVoltage(channel=1,voltage=signal_force)
+                    self.pa.emulMode_2Q(channel=3)
+                    self.pa.setVoltage_Priority(channel=3)
+                    self.pa.setVoltage(channel=3,voltage=signal_force)
                     sleep(0.2)
-                    self.pa.outp_ON(channel=1)
+                    self.pa.outp_ON(channel=3)
                     sleep(0.5)
                 if re.search('outp', signal_name):
                     self.ps_outpn.setVoltage(channel=2, voltage=signal_force)
@@ -443,6 +443,7 @@ class Boost:
 
     def power_off(self):
         self.pa.outp_OFF(channel=4)
+        self.pa.outp_OFF(channel=3)
         self.pa.outp_OFF(channel=1)
         self.supplies.outp_OFF(channel=1)
         sleep(0.5)
