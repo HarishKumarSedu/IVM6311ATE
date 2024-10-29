@@ -40,6 +40,9 @@ class Reference:
         self.MSB_trim = None
         self.trim_values = None
         self.reg_value = None
+        self.reg_trim2 = None
+        self.LSB_trim2 = None
+        self.MSB_trim2 = None
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -236,11 +239,17 @@ class Reference:
                 reg_instr = self.parser.extract_TrimSweep__Instruction(instruction)
                 print(f'Trim instruction : {reg_instr}')
                 print(type(reg_instr))
-                self.reg_trim = int(reg_instr.get('RegAddr'), 16)
-                self.LSB_trim = int(reg_instr.get('LSB'))
-                self.MSB_trim = int(reg_instr.get('MSB'))
-                # self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
-
+                if len(reg_instr) == 4:
+                    self.reg_trim = int(reg_instr.get('regaddr1'), 16)
+                    self.LSB_trim = int(reg_instr.get('msb1'))
+                    self.MSB_trim = int(reg_instr.get('lsb1'))
+                elif len(reg_instr) == 8:
+                    self.reg_trim = int(reg_instr.get('regaddr1'), 16)
+                    self.LSB_trim = int(reg_instr.get('msb1'))
+                    self.MSB_trim = int(reg_instr.get('lsb1'))
+                    self.reg_trim2 = int(reg_instr.get('regaddr2'), 16)
+                    self.LSB_trim2 = int(reg_instr.get('msb2'))
+                    self.MSB_trim2 = int(reg_instr.get('lsb2'))
             if re.match('calculate', instruction):
                 closest_value,best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
                 best_codes.append(best_code)
@@ -252,7 +261,6 @@ class Reference:
 if __name__ == '__main__':
     ref = Reference()
     output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    
     output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
     ref.meter.setVoltage(channel=4,voltage=1.8)
     ref.meter.outp_ON(channel=4)

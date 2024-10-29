@@ -68,57 +68,36 @@ class Parser:
 
         return register
     
-    # # extract_TrimSweep__Instruction('TrimSweep - 0xB0[7:4] "Select code which sets ATEST voltage as close as possible to target"')
-    def extract_TrimSweep__Instruction(self,instruction: str):
-       def register_format(instruction):
-           instruction_length = len(instruction)
-           register = {}
-           # there is no bit field it is the default size
-           if instruction_length == 2:
-               if ":" in instruction[1]:
-                   bits = instruction[1].split(':')
-                   register={
-                   "RegAddr" : hex(int(instruction[0],16)),
-                   "MSB" :int(bits[0],16),
-                   "LSB" : int(bits[1],16),
-                   "Data" : None,
-                   }
-               else:
-                   register={
-                       "RegAddr" : hex(int(instruction[0],16)),
-                       "MSB" : 7,
-                       "LSB" : 0,
-                       "Data" : hex(int(instruction[1],16)),
-                   }
-           # check for the bit field 
-           elif instruction_length == 3:
-               #check for the single bit or bit field 
-               if ":" in instruction[1]:
-                   bits = instruction[1].split(':')
-                   register={
-                   "RegAddr" : hex(int(instruction[0],16)),
-                   "MSB" :hex(int(bits[1],16)),
-                   "LSB" : hex(int(bits[0],16)),
-                   "Data" : hex(int(instruction[2],16)),
-                   }
-    
-               else:
-                   register={
-                   "RegAddr" : hex(int(instruction[0],16)),
-                   "MSB" :hex(int(instruction[1],16)),
-                   "LSB" : hex(int(instruction[1],16)),
-                   "Data" : hex(int(instruction[2],16)),
-                   }
-           return register
-       # extract the trim sweep pattren 
-       pattern = re.compile(r"\b(0[xX]+[0-9a-fA-F]+)+\[(.*?)\]")
-       if re.match('trim__',instruction):
-           instruction = instruction.replace('trim__','')
-       instruction = re.findall(pattern, instruction)[0]
-       return register_format(instruction=instruction)
+    def extract_TrimSweep__Instruction(self, instruction: str):
+        # Funzione interna per formattare i registri
+        def register_format(instruction):
+            # Espressione regolare per trovare registri e i relativi bit
+            pattern = r'0x\w+\[(\d+)(?::(\d+))?\]'
+            registers = {}
+
+            # Trova tutte le occorrenze dei registri
+            matches = re.finditer(pattern, instruction)
+            for idx, match in enumerate(matches, start=1):
+                register_addr = match.group(0).split('[')[0]  # Registro es. 0xB2
+                lsb = int(match.group(1))  # LSB
+                msb = int(match.group(2)) if match.group(2) else lsb  # MSB o LSB se non fornito
+
+                # Aggiungi i registri formattati al dizionario
+                registers[f'regaddr{idx}'] = register_addr
+                registers[f'lsb{idx}'] = lsb
+                registers[f'msb{idx}'] = msb
+                registers[f'data{idx}'] = None  # Puoi modificare questa parte se hai un dato specifico da associare
+
+            return registers
+
+        # Rimuovi eventuali spazi e sostituisci i separatori
+        instruction = instruction.replace(" ", "").replace("__", "_").strip()
+        # Estrai i registri dall'istruzione
+        return register_format(instruction)
+
    
-    def extract_Trim__Instruction(self,instruction: str):
-        return self.extract_TrimSweep__Instruction(instruction)
+    # def extract_Trim__Instruction(self,instruction: str):
+    #     return self.extract_TrimSweep__Instruction(instruction)
 
     def extract_CopyRegister__Instruction(self,instruction: str)->dict:
         pattern1=re.compile(r"\b(0[xX]+[0-9a-fA-F]+)+\[(.*?)\]")
@@ -817,6 +796,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_forceramp_instruction('Ramp__VBSO__4.5V__1V "decrease VBSO from 4.5V with steps of 50mV untill FSYN and SDI toggle from Low to High"'))
+    print(parser.extract_TrimSweep__Instruction('Trim__ 0xEF[4:0]'))
     # print(parser.value_clean('2ma'))
     
