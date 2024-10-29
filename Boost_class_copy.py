@@ -37,6 +37,7 @@ class Boost:
         self.vbat_measurements = []
         self.vfsyn_measurements = []
         self.vsdi_measurements = []
+        self.current_priority_set = False
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -323,7 +324,10 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
-                    self.pa.setCurrent_Priority(channel=1)
+                    if not self.current_priority_set:
+                        self.pa.setCurrent_Priority(channel=1)
+                        self.current_priority_set = True
+                    # self.pa.setCurrent_Priority(channel=1)
                     self.pa.setCurrent(channel=1,current=signal_force)
                     self.pa.outp_ON(channel=1)
                     sleep(0.5)
