@@ -121,14 +121,36 @@ class Reference:
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)
 
-    def write_device(self,data: {}):
-        # sleep(1)
-        device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16)])[0]
-        bit_width = 2 ** (data.get('MSB') - data.get('LSB') + 1)
-        if int(data.get('Data'), 16) < bit_width:
-            mask = ~((bit_width - 1) << data.get('LSB'))
-            device_data = (device_data & mask) | ((int(data.get('Data'), 16)) << data.get('LSB'))
-            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16), device_data])
+    def write_device(self, data: {}):
+        # Function to convert hexadecimal or numeric values to integers
+        def convert_to_int(value):
+            if isinstance(value, str):
+                return int(value, 16)  # Convert from hexadecimal string to integer
+            elif isinstance(value, (int, float)):  # Also handle floats by converting them to integers
+                return int(value)
+            else:
+                raise TypeError(f"Unsupported type for conversion: {type(value)}")
+        # Convert MSB, LSB, RegAddr, and Data to integers
+        msb = convert_to_int(data.get('MSB'))
+        lsb = convert_to_int(data.get('LSB'))
+        reg_addr = convert_to_int(data.get('RegAddr'))
+        data_value = convert_to_int(data.get('Data'))
+        # Read the register from the device
+        device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_addr])[0]
+        # print(hex(device_data))
+        # Calculate the bit width and ensure it's an integer
+        bit_width = int(2 ** (msb - lsb + 1))
+        # Check if the value is valid
+        if data_value < bit_width:
+            # Create the mask for the bit width, ensuring that mask and lsb are integers
+            mask = ~((bit_width - 1) << int(lsb))
+            device_data = int(device_data)
+            mask = int(mask)
+            # Perform bitwise operations
+            device_data = (device_data & mask) | (data_value << int(lsb))
+            print(hex(device_data))
+            # Write the new value to the device
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg_addr, device_data])
         else:
             print(f'Data is out of width')
 
@@ -241,15 +263,15 @@ class Reference:
                 print(type(reg_instr))
                 if len(reg_instr) == 4:
                     self.reg_trim = int(reg_instr.get('regaddr1'), 16)
-                    self.LSB_trim = int(reg_instr.get('msb1'))
-                    self.MSB_trim = int(reg_instr.get('lsb1'))
+                    self.LSB_trim = int(reg_instr.get('lsb1'))
+                    self.MSB_trim = int(reg_instr.get('msb1'))
                 elif len(reg_instr) == 8:
                     self.reg_trim = int(reg_instr.get('regaddr1'), 16)
-                    self.LSB_trim = int(reg_instr.get('msb1'))
-                    self.MSB_trim = int(reg_instr.get('lsb1'))
+                    self.LSB_trim = int(reg_instr.get('lsb1'))
+                    self.MSB_trim = int(reg_instr.get('msb1'))
                     self.reg_trim2 = int(reg_instr.get('regaddr2'), 16)
-                    self.LSB_trim2 = int(reg_instr.get('msb2'))
-                    self.MSB_trim2 = int(reg_instr.get('lsb2'))
+                    self.LSB_trim2 = int(reg_instr.get('lsb2'))
+                    self.MSB_trim2 = int(reg_instr.get('msb2'))
             if re.match('calculate', instruction):
                 closest_value,best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
                 best_codes.append(best_code)

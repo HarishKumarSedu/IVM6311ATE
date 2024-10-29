@@ -79,8 +79,8 @@ class Parser:
             matches = re.finditer(pattern, instruction)
             for idx, match in enumerate(matches, start=1):
                 register_addr = match.group(0).split('[')[0]  # Registro es. 0xB2
-                lsb = int(match.group(1))  # LSB
-                msb = int(match.group(2)) if match.group(2) else lsb  # MSB o LSB se non fornito
+                lsb = int(match.group(2))  # LSB
+                msb = int(match.group(1)) if match.group(1) else lsb  # MSB o LSB se non fornito
 
                 # Aggiungi i registri formattati al dizionario
                 registers[f'regaddr{idx}'] = register_addr

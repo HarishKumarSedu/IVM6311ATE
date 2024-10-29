@@ -9,6 +9,7 @@ class Trim:
 
     def __init__(self,mcp):
         self.meter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
+        # mcp = MCP2221()
         self.mcp = mcp
         self.scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
         # self.mcp2317 = MCP2317(mcp=self.mcp)
@@ -130,32 +131,87 @@ class Trim:
         print(trim_values)
         # Return the measured values and the modified registers
         return trim_values, modified_register
-    
 
+    def sweep_trim_bit_freq_two_registers(self, reg1, lsb1, msb1, reg2, lsb2, msb2):
+        try:
+            # Leggi i valori iniziali dei registri
+            reg_val1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0]
+            reg_val2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg2], Nobytes=1)[0]
+            
+            print(f"Registro 1 iniziale: {hex(reg_val1)}, Registro 2 iniziale: {hex(reg_val2)}")
+
+            self.scope.set_HScale('100E-6')
+            sleep(1)
+            self.scope.set_trigger__mode(mode='NORM')
+            self.scope.set_HScale('10E-6')
+            self.scope.set_Channel__VScale(scale=0.5)
+
+            # Calcola le iterazioni per entrambi i registri
+            n_iterations1 = (1 << (msb1 - lsb1 + 1))
+            n_iterations2 = (1 << (msb2 - lsb2 + 1))
+
+            # Crea le maschere per entrambi i registri
+            mask1 = ((1 << (msb1 - lsb1 + 1)) - 1) << lsb1
+            mask2 = ((1 << (msb2 - lsb2 + 1)) - 1) << lsb2
+            
+            # Conserva i bit esterni per entrambi i registri
+            external_bits1 = reg_val1 & ~mask1
+            external_bits2 = reg_val2 & ~mask2
+            
+            # Zero i bit interni prima di iniziare
+            reg_val1_zeroed = reg_val1 & ~mask1
+            reg_val2_zeroed = reg_val2 & ~mask2
+
+            # Scrivi i registri con i bit azzerati
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, reg_val1_zeroed])
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, reg_val2_zeroed])
+
+            trim_values = []
+            modified_registers = []
+
+            # Loop per incrementare i bit nei registri
+            for increment1 in range(n_iterations1):
+                for increment2 in range(n_iterations2):
+                    # Modifica i bit interni per entrambi i registri
+                    internal_bits1 = (increment1 << lsb1) & mask1
+                    internal_bits2 = (increment2 << lsb2) & mask2
+                    
+                    # Combina i bit esterni con i bit interni modificati
+                    new_register_val1 = external_bits1 | internal_bits1
+                    new_register_val2 = external_bits2 | internal_bits2
+
+                    modified_registers.append((new_register_val1, new_register_val2))
+
+                    # Scrivi i nuovi valori dei registri
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, new_register_val1])
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
+                    
+                    sleep(1)  # Tempo di stabilizzazione
+
+                    # Misura la frequenza e aggiungila alla lista
+                    freq = sum(self.scope.meas_Freq(Meas='MEAS2') for _ in range(20)) / 20
+                    trim_values.append(freq)
+
+                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}, Frequenza: {freq}")
+
+            print("Valori di frequenza misurati:", trim_values)
+            return trim_values, modified_registers
+
+        except Exception as e:
+            print(f"Errore durante l'esecuzione: {e}")
 
 if __name__ == '__main__':
     mcp = MCP2221()
     trim = Trim(mcp=mcp)
-    trim.mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=True)
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[00,0x0F])
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0xFE,0x01])
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0x2F,0xAA])
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0x2F,0xBB])
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0x0F,0x88])
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0x10,0x08])
-    trim.mcp2317.Switch(device_addr=0x20,row=1, col=4, Enable=False)
-    sleep(1)
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0x19,0x81])
-    sleep(1)
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0x1A,0x01])
-    sleep(1)
-    trim.mcp.mcpWrite(SlaveAddress=0x6C,data=[0xB0,0x0E])
-    reg_trim = 0xb0
-    lsb = 7
-    msb = 4
-    target = 1.8
-    trim_values, modified_registers = trim.sweep_trim_bit(reg_trim,lsb,msb)
-    closest_value = trim.find_closest_value(trim_values, target)
-    # print(closest_value)
-    trim.find_best_code(trim_values,modified_registers, target)
+    # reg1 = 0xB1
+    # reg2 = 0xB2
+    # lsb1 = 0
+    # msb1 = 3
+    # lsb2 = 5
+    # msb2 = 5
+    # target = 1.8
+    # trim_values, modified_registers = trim.sweep_trim_bit_freq_two_registers(reg1,lsb1,msb1,reg2,lsb2,msb2)
+    # closest_value = trim.find_closest_value(trim_values, target)
+    # # print(closest_value)
+    # trim.find_best_code(trim_values,modified_registers, target)
 
