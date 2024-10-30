@@ -1,5 +1,7 @@
 Trim:
-  - BST_OCP_TRIM
+  - VBGR_ADJ_TRIM
+  - TSDN 
+  - FRO_CLOCK
 
 Reference:
   - UVLO

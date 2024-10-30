@@ -175,29 +175,29 @@ class Trimcopy:
             modified_registers = []
 
             # Loop per incrementare i bit nei registri
-            for increment1 in range(n_iterations1):
-                for increment2 in range(n_iterations2):
-                    # Modifica i bit interni per entrambi i registri
+            for increment2 in range(n_iterations2):
+                # Modifica i bit interni per reg2
+                internal_bits2 = (increment2 << lsb2) & mask2
+                new_register_val2 = external_bits2 | internal_bits2
+
+                for increment1 in range(n_iterations1):
+                    # Modifica i bit interni per reg1
                     internal_bits1 = (increment1 << lsb1) & mask1
-                    internal_bits2 = (increment2 << lsb2) & mask2
-                    
-                    # Combina i bit esterni con i bit interni modificati
                     new_register_val1 = external_bits1 | internal_bits1
-                    new_register_val2 = external_bits2 | internal_bits2
 
                     modified_registers.append((new_register_val1, new_register_val2))
 
                     # Scrivi i nuovi valori dei registri
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, new_register_val1])
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
-                    
+
                     sleep(1)  # Tempo di stabilizzazione
 
                     # Misura la frequenza e aggiungila alla lista
                     freq = sum(self.scope.meas_Freq(Meas='MEAS2') for _ in range(20)) / 20
                     trim_values.append(freq)
 
-                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}, Frequenza: {freq}")
+                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}")
 
             print("Valori di frequenza misurati:", trim_values)
             return trim_values, modified_registers
@@ -234,13 +234,13 @@ if __name__ == '__main__':
     sleep(0.5)
     trim.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
     sleep(0.5)
-    trim.mcp2317.Switch(device_addr=0x23, row=8, col=6, Enable=True)
-    sleep(0.5)
-    trim.pa.emulMode_2Q(channel=3)
-    trim.pa.setVoltage_Priority(channel=3)
-    trim.pa.setVoltage(channel=3,voltage=3.6)
-    sleep(0.2)
-    trim.pa.outp_ON(channel=3)
+    # trim.mcp2317.Switch(device_addr=0x23, row=8, col=6, Enable=True)
+    # sleep(0.5)
+    # trim.pa.emulMode_2Q(channel=3)
+    # trim.pa.setVoltage_Priority(channel=3)
+    # trim.pa.setVoltage(channel=3,voltage=3.6)
+    # sleep(0.2)
+    # trim.pa.outp_ON(channel=3)
     #############################RUN_TEST_BOOST_ENABLE
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x00])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB0, 0x00])
@@ -257,12 +257,13 @@ if __name__ == '__main__':
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x16, 0x40])
     #############################RUN_ENABLE_ANA_TEST_POINT
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x01])
-    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x0F, 0x88])
+    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x0F, 0x08])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x10, 0x08])
     sleep(0.2)
     trim.mcp2317.Switch(device_addr=0x20,row = 1, col = 4, Enable=False)
     sleep(0.5)
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x19, 0x80])
+    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x1A, 0x00])
     sleep(0.5)
     ##############################RUN_OCP
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x00])
@@ -276,13 +277,12 @@ if __name__ == '__main__':
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x00])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB2, 0xD7])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x01])
+    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x0F, 0x80])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB0, 0x0E])
-    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x15, 0x01])
-    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x19, 0x01])
-    sleep(0.2)
+    sleep(0.5)
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x15, 0x04])
-    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x19, 0x02])
-    sleep(0.2)
+    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x19, 0x82])
+    sleep(0.5)
     trim.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
     sleep(0.5)
     trim.pa.emulMode_2Q(channel=1)
@@ -300,4 +300,14 @@ if __name__ == '__main__':
     closest_value = trim.find_closest_value(trim_values, target)
     print(closest_value)
     trim.find_best_code(trim_values,modified_registers, target)
+    for i in range (0x20,0x27):
+        sleep(0.5)
+        trim.mcp2317.Switch_reset(device_addr=i)
+    trim.pa.outp_OFF(channel=1)
+    trim.pa.outp_OFF(channel=4)
+    trim.supplies_8.outp_OFF(channel=1)
+    trim.supplies_8.outp_OFF(channel=2)
+    trim.supplies.outp_OFF(channel=1)
+    trim.supplies.outp_OFF(channel=2)
+
 
