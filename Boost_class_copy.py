@@ -195,7 +195,7 @@ class Boost:
                 self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=True)
                 sleep(1)
                 SW_pin= self.voltmeter.meas_V()
-                if(SW_pin - SW_target) <= tollerance:
+                if abs(SW_pin - SW_target) <= tollerance:
                     print("SW is shorted on VBAT")
                     sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)

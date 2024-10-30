@@ -30,6 +30,7 @@ class Reference:
         self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
+        self.supplies_8 = E3648('GPIB0::8::INSTR')
         self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
@@ -43,6 +44,7 @@ class Reference:
         self.reg_trim2 = None
         self.LSB_trim2 = None
         self.MSB_trim2 = None
+        self.current_priority_set = False
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -167,6 +169,48 @@ class Reference:
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
+    
+    def execute_Boost_test_default(self):
+        startup_procedure = self.procedures['Boost_Test_Default'].loc[0].split('\n')
+        for instruction in startup_procedure:
+            instruction = instruction.lower()
+            if re.match('0x', instruction):
+                reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
+                print(reg_data)
+                self.write_device(reg_data)
+            if re.match('Force__VBIAS__5V'.lower(), instruction):
+                print('Force__VBIAS__5V')
+                self.supplies_8.setVoltage(channel=2,voltage=5.0)
+                self.supplies_8.outp_ON(channel=2)
+            if re.match('Force__VBSO__3.6V'.lower(), instruction):
+                print('Force__VBSO__3.6V')
+                self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
+                sleep(0.2)
+                self.supplies_8.setVoltage(channel=1,voltage=3.6)
+                self.supplies_8.outp_ON(channel=1)
+            if re.match('Force__SW__3.6V'.lower(), instruction):
+                print('Force__SW__3.6V')
+                SW_target = 3.6
+                tollerance = 0.1
+                self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=True)
+                sleep(1)
+                SW_pin= self.voltmeter.meas_V()
+                if abs(SW_target - SW_pin) <= tollerance:
+                    print("SW is shorted on VBAT")
+                    sleep(0.5)
+                    self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
+                else:
+                    self.meter.outp_OFF(channel=3)
+                    sleep(0.2)
+                    self.mcp2317.Switch(device_addr=0x23, row=8, col=6, Enable=True)
+                    sleep(0.5)
+                    self.meter.emulMode_2Q(channel=3)
+                    self.meter.setVoltage_Priority(channel=3)
+                    self.meter.setVoltage(channel=3,voltage=3.6)
+                    sleep(0.2)
+                    self.meter.outp_ON(channel=3)
+                    sleep(0.5)
+                    self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -209,7 +253,25 @@ class Reference:
                     self.ps_gpib.setVoltage(channel=2, voltage=signal_force)
                     sleep(0.5)
                     self.ps_gpib.outp_ON(channel=2)
+            
+            if re.search('A', signal_Unit):
+                signal_force = force_signal_instruction.get('Value')
+                if re.search('sw',signal_name):
+                    # self.pa.outp_OFF(channel=1)
+                    sleep(0.2)
+                    self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
+                    sleep(0.5)
+                    self.meter.emulMode_2Q(channel=1)
+                    if not self.current_priority_set:
+                        self.meter.setCurrent_Priority(channel=1)
+                        self.current_priority_set = True
+                    # self.pa.setCurrent_Priority(channel=1)
+                    self.meter.setCurrent(channel=1,current=signal_force)
+                    self.meter.outp_ON(channel=1)
+                    sleep(0.5)
+
             force_signal_instruction = None
+
 
     def trim_sweep_voltage(self,reg_trim,lsb,msb):
         self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
@@ -244,6 +306,9 @@ class Reference:
                 if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
                     print('Enable Ana TestPoint Procedure')
                     self.execute_Enable_Ana_Testpoint()
+                if re.findall('Boost_test_default'.lower(), instruction):
+                    print('Enable Boost Test Default Procedure')
+                    self.execute_Boost_test_default()
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
