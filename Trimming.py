@@ -170,29 +170,29 @@ class Trim:
             modified_registers = []
 
             # Loop per incrementare i bit nei registri
-            for increment1 in range(n_iterations1):
-                for increment2 in range(n_iterations2):
-                    # Modifica i bit interni per entrambi i registri
+            for increment2 in range(n_iterations2):
+                # Modifica i bit interni per reg2
+                internal_bits2 = (increment2 << lsb2) & mask2
+                new_register_val2 = external_bits2 | internal_bits2
+
+                for increment1 in range(n_iterations1):
+                    # Modifica i bit interni per reg1
                     internal_bits1 = (increment1 << lsb1) & mask1
-                    internal_bits2 = (increment2 << lsb2) & mask2
-                    
-                    # Combina i bit esterni con i bit interni modificati
                     new_register_val1 = external_bits1 | internal_bits1
-                    new_register_val2 = external_bits2 | internal_bits2
 
                     modified_registers.append((new_register_val1, new_register_val2))
 
                     # Scrivi i nuovi valori dei registri
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, new_register_val1])
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
-                    
+
                     sleep(1)  # Tempo di stabilizzazione
 
                     # Misura la frequenza e aggiungila alla lista
                     freq = sum(self.scope.meas_Freq(Meas='MEAS2') for _ in range(20)) / 20
                     trim_values.append(freq)
 
-                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}, Frequenza: {freq}")
+                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}")
 
             print("Valori di frequenza misurati:", trim_values)
             return trim_values, modified_registers
