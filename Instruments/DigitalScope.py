@@ -61,6 +61,9 @@ class dpo_2014B:
         # self.scope.write(':ACTONEV:NUMACQ 1')
         # self.scope.write(':ACTONEV:REPEATC 1')
 
+    def single__Trigger__Mode(self):
+        self.scope.write('ACQUIRE:STOPAFTER SEQUENCE')
+
     def single_Trigger__ON(self):
         self.scope.write('ACQuire:STATE ON')
     def single_Trigger__RUN(self):
@@ -76,6 +79,14 @@ class dpo_2014B:
     
     def set_autoSet(self):
         self.scope.write('AUTOSet EXECute')
+    
+    def trigger_detect(self):
+        if float(self.scope.query('ACQuire:STATE?')) == 1.0:
+            State = True 
+        else :
+            State = False 
+
+        return State
 
     @property
     def acquireState(self):
@@ -144,6 +155,11 @@ class dpo_2014B:
         time.sleep(2)
         send_keys('{ESC}') 
         #dlg.close()
+
+    def query_trigger_state(self):
+        self.scope.write("ACQuire:STOPAfter SEQUENCE")
+        return self.scope.query("TRIGger:STATE?").strip()
+
 
 if __name__ == '__main__':
     scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')

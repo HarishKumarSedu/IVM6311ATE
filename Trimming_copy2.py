@@ -7,6 +7,7 @@ from Instruments.KeySight_N670x import N670x
 import pandas as pd
 from time import sleep
 
+
 class Trimcopy:
 
     def __init__(self,mcp):
@@ -139,21 +140,27 @@ class Trimcopy:
 
     def sweep_trim_bit_freq_two_registers(self, reg1, lsb1, msb1, reg2, lsb2, msb2):
         try:
+
+            defval_reg1 = 0x7F
+            defval_reg2 = 0xD0
+            trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data = [0xB1, defval_reg1])
+            trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data = [0xB2, defval_reg2])
             # Leggi i valori iniziali dei registri
             reg_val1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0]
             reg_val2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg2], Nobytes=1)[0]
             
             print(f"Registro 1 iniziale: {hex(reg_val1)}, Registro 2 iniziale: {hex(reg_val2)}")
 
+
+            self.scope.single__Trigger__Mode()
             self.scope.set_HScale('100E-6')
             sleep(1)
-            self.scope.set_trigger__mode(mode='AUTO')
+            self.scope.set_trigger__mode(mode='NORM')
             self.scope.set_HScale('10E-6')
             self.scope.set_Channel__VScale(scale=0.5)
 
-            # Calcola le iterazioni per entrambi i registri
+            # Calcola le iterazioni per reg1
             n_iterations1 = (1 << (msb1 - lsb1 + 1))
-            n_iterations2 = (1 << (msb2 - lsb2 + 1))
 
             # Crea le maschere per entrambi i registri
             mask1 = ((1 << (msb1 - lsb1 + 1)) - 1) << lsb1
@@ -166,8 +173,6 @@ class Trimcopy:
             # Zero i bit interni prima di iniziare
             reg_val1_zeroed = reg_val1 & ~mask1
             reg_val2_zeroed = reg_val2 & ~mask2
-            print(reg_val1)
-            print(reg_val2)
 
             # Scrivi i registri con i bit azzerati
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, reg_val1_zeroed])
@@ -175,15 +180,24 @@ class Trimcopy:
 
             trim_values = []
             modified_registers = []
+            Triggered = False
 
-            # Loop per incrementare i bit nei registri
-            for increment2 in range(n_iterations2):
-                # Modifica i bit interni per reg2
-                internal_bits2 = (increment2 << lsb2) & mask2
-                print(internal_bits2)
+            # Imposta i valori fissi per increment2
+            increment2_values = [0xD0, 0xF0]
+
+            for increment2 in increment2_values:
+                # Imposta i bit interni per reg2
+                internal_bits2 = increment2 & mask2
                 new_register_val2 = external_bits2 | internal_bits2
 
-                for increment1 in range(n_iterations1):
+                if increment2 == 0xD0:
+                    # Primo ciclo con increment2 = 0xD0, decremento di increment1 da 0x7F a 0x70
+                    increment1_range = range(0x7F, 0x6F, -1)
+                else:
+                    # Secondo ciclo con increment2 = 0xF0, incremento di increment1 da 0x70 a 0x7F
+                    increment1_range = range(0x70, 0x80)
+
+                for increment1 in increment1_range:
                     # Modifica i bit interni per reg1
                     internal_bits1 = (increment1 << lsb1) & mask1
                     new_register_val1 = external_bits1 | internal_bits1
@@ -195,13 +209,17 @@ class Trimcopy:
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
 
                     sleep(1)  # Tempo di stabilizzazione
-
+                    # Stampa i valori attuali dei registri
                     print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}")
 
-            return trim_values, modified_registers
+                    
+
+            return new_register_val1, new_register_val1
 
         except Exception as e:
             print(f"Errore durante l'esecuzione: {e}")
+
+
 
 if __name__ == '__main__':
     mcp = MCP2221()
@@ -295,11 +313,11 @@ if __name__ == '__main__':
     sleep(0.5)
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x15, 0x04])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x19, 0x82])
-    defval_reg1 = 0x70
+    defval_reg1 = 0x7F
     defval_reg2 = 0xD0
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data = [0xB1, defval_reg1])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data = [0xB2, defval_reg2])
-    sleep(0.5)
+    sleep(1)
     trim.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
     sleep(0.5)
     trim.pa.emulMode_2Q(channel=1)
@@ -314,9 +332,9 @@ if __name__ == '__main__':
     msb2 = 5
     target = 1.8
     trim_values, modified_registers = trim.sweep_trim_bit_freq_two_registers(reg1,lsb1,msb1,reg2,lsb2,msb2)
-    closest_value = trim.find_closest_value(trim_values, target)
-    print(closest_value)
-    trim.find_best_code(trim_values,modified_registers, target)
+    # closest_value = trim.find_closest_value(trim_values, target)
+    # print(closest_value)
+    # trim.find_best_code(trim_values,modified_registers, target)
     for i in range (0x20,0x27):
         sleep(0.5)
         trim.mcp2317.Switch_reset(device_addr=i)
