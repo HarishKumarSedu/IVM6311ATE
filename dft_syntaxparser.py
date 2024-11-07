@@ -68,36 +68,39 @@ class Parser:
 
         return register
     
-    def extract_TrimSweep__Instruction(self, instruction: str):
-        # Funzione interna per formattare i registri
+
+    def extract_TrimSweep_Instruction(self, instruction: str):
+        # Rimuovi eventuali commenti tra virgolette doppie
+        instruction = re.sub(r'"[^"]*"', '', instruction)
+        
+        # Funzione interna per estrarre e formattare i dettagli dei registri
         def register_format(instruction):
-            # Espressione regolare per trovare registri e i relativi bit
-            pattern = r'0x\w+\[(\d+)(?::(\d+))?\]'
+            # Espressione regolare per trovare registri con range di bit opzionale
+            pattern = r'(0x\w+)\[(\d+)(?::(\d+))?\]'
             registers = {}
 
             # Trova tutte le occorrenze dei registri
             matches = re.finditer(pattern, instruction)
             for idx, match in enumerate(matches, start=1):
-                register_addr = match.group(0).split('[')[0]  # Registro es. 0xB2
-                lsb = int(match.group(2))  # LSB
-                msb = int(match.group(1)) if match.group(1) else lsb  # MSB o LSB se non fornito
+                register_addr = match.group(1)  # Indirizzo del registro, es. 0xB2 o 0xEF
+                msb = int(match.group(2))  # MSB o singolo bit
+                lsb = int(match.group(3)) if match.group(3) else msb  # LSB o MSB se non fornito
 
-                # Aggiungi i registri formattati al dizionario
+                # Aggiungi i dettagli dei registri formattati al dizionario
                 registers[f'regaddr{idx}'] = register_addr
                 registers[f'lsb{idx}'] = lsb
                 registers[f'msb{idx}'] = msb
-                registers[f'data{idx}'] = None  # Puoi modificare questa parte se hai un dato specifico da associare
+                registers[f'data{idx}'] = None  # Campo dati opzionale, modifica se necessario
 
             return registers
 
-        # Rimuovi eventuali spazi e sostituisci i separatori
+        # Rimuovi spazi e sostituisci i separatori
         instruction = instruction.replace(" ", "").replace("__", "_").strip()
+
         # Estrai i registri dall'istruzione
         return register_format(instruction)
 
-   
-    # def extract_Trim__Instruction(self,instruction: str):
-    #     return self.extract_TrimSweep__Instruction(instruction)
+
 
     def extract_CopyRegister__Instruction(self,instruction: str)->dict:
         pattern1=re.compile(r"\b(0[xX]+[0-9a-fA-F]+)+\[(.*?)\]")
@@ -796,6 +799,6 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_TrimSweep__Instruction('Trim__ 0xEF[4:0]'))
+    print(parser.extract_TrimSweep_Instruction('Trim__ 0xB3[7:5] "Select code which sets ATEST voltage as close as possible to target"'))
     # print(parser.value_clean('2ma'))
     
