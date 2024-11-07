@@ -457,6 +457,7 @@ class Boost:
         sleep(0.5)
         self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
         self.pa.setVoltage(channel=4,voltage=1.8)
+        self.pa.setCurrent(channel=4, current=0.2)
         self.pa.outp_ON(channel=4)
     
     def hw_reset(self):
