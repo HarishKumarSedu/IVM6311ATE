@@ -1,5 +1,5 @@
 from SwitchMatrix.mcp2221 import MCP2221
-# from SwitchMatrix.mcp2317 import MCP2317
+from SwitchMatrix.mcp2317 import MCP2317
 from Instruments.Keysight_34461 import A34461
 from Instruments.DigitalScope import dpo_2014B
 import pandas as pd
@@ -9,10 +9,10 @@ class Trim:
 
     def __init__(self,mcp):
         self.meter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
-        # mcp = MCP2221()
+        mcp = MCP2221()
         self.mcp = mcp
         self.scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
-        # self.mcp2317 = MCP2317(mcp=self.mcp)
+        self.mcp2317 = MCP2317(mcp=self.mcp)
         self.slave_address = 0x6c
 
     def sweep_trim_bit_voltage(self, reg_trim, lsb, msb):

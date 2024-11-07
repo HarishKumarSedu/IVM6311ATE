@@ -119,6 +119,7 @@ class Reference:
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                sleep(0.5)
                 self.pa.setCurrent(channel=4, current= 0.2)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
@@ -195,10 +196,15 @@ class Reference:
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
             signal_Unit = measure_signal.get('Unit')
+            signal_Name = measure_signal.get('Signal')
             measure_values = None
             print(signal_Unit)
+            print(signal_Name)
             if re.search('voltage', signal_Unit):
-                self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
+                if re.search('fsyn', signal_Name):
+                    self.trim_OCP(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
+                else: 
+                    self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
             if re.search('current', signal_Unit):
                 pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=True)
@@ -251,7 +257,10 @@ class Reference:
 
             force_signal_instruction = None
 
-
+    def trim_OCP(self,reg_trim, lsb, msb, reg_trim2,lsb2,msb2):
+        self.reg_value,self.reg_trim, self.reg_trim2 = self.trim.sweep_trim_bit_freq_two_registers(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
+        return self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2
+    
     def trim_sweep_voltage(self,reg_trim,lsb,msb):
         self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
         self.trim_values,self.reg_value = self.trim.sweep_trim_bit_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
@@ -308,7 +317,7 @@ class Reference:
                 print(f'Measure Signal : {measure_signal}')
                 self.measure_value_check(measure_signal=measure_signal, typical=typical)
             if re.match('trim', instruction):
-                reg_instr = self.parser.extract_TrimSweep__Instruction(instruction)
+                reg_instr = self.parser.extract_TrimSweep_Instruction(instruction)
                 print(f'Trim instruction : {reg_instr}')
                 print(type(reg_instr))
                 if len(reg_instr) == 4:
@@ -322,6 +331,7 @@ class Reference:
                     self.reg_trim2 = int(reg_instr.get('regaddr2'), 16)
                     self.LSB_trim2 = int(reg_instr.get('lsb2'))
                     self.MSB_trim2 = int(reg_instr.get('msb2'))
+                    print(hex(self.reg_trim),hex(self.LSB_trim),hex(self.MSB_trim),hex(self.reg_trim2),hex(self.LSB_trim2),hex(self.MSB_trim2 ))
             if re.match('calculate', instruction):
                 closest_value,best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
                 best_codes.append(best_code)
@@ -338,12 +348,15 @@ class Reference:
         self.supplies_8.setVoltage(channel=1, voltage=5)
         self.supplies_8.setCurrent(channel=1, current=0.2)
         self.supplies_8.outp_ON(channel=1)
+        self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
         sleep(0.5)
         self.supplies_8.setVoltage(channel=2, voltage=3.6)
         self.supplies_8.setCurrent(channel=2, current=0.2)
+        sleep(0.5)
+        self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
+        sleep(0.5)
         self.supplies_8.outp_ON(channel=2)
         sleep(0.5)
-        self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
         self.pa.setVoltage(channel=4,voltage=1.8)
         self.pa.setCurrent(channel=4, current=0.2)
         self.pa.outp_ON(channel=4)
