@@ -182,36 +182,14 @@ class Reference:
             if re.match('Force__VBIAS__5V'.lower(), instruction):
                 print('Force__VBIAS__5V')
                 self.supplies_8.setVoltage(channel=2,voltage=5.0)
+                self.supplies_8.setCurrent(channel=2, current= 0.2)
                 self.supplies_8.outp_ON(channel=2)
             if re.match('Force__VBSO__3.6V'.lower(), instruction):
                 print('Force__VBSO__3.6V')
                 self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
-                sleep(0.2)
+                sleep(0.5)
                 self.supplies_8.setVoltage(channel=1,voltage=3.6)
                 self.supplies_8.outp_ON(channel=1)
-            if re.match('Force__SW__3.6V'.lower(), instruction):
-                print('Force__SW__3.6V')
-                SW_target = 3.6
-                tollerance = 0.1
-                self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=True)
-                sleep(1)
-                SW_pin= self.voltmeter.meas_V()
-                if abs(SW_target - SW_pin) <= tollerance:
-                    print("SW is shorted on VBAT")
-                    sleep(0.5)
-                    self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
-                else:
-                    self.pa.outp_OFF(channel=3)
-                    sleep(0.2)
-                    self.mcp2317.Switch(device_addr=0x23, row=8, col=6, Enable=True)
-                    sleep(0.5)
-                    self.pa.emulMode_2Q(channel=3)
-                    self.pa.setVoltage_Priority(channel=3)
-                    self.pa.setVoltage(channel=3,voltage=3.6)
-                    sleep(0.2)
-                    self.pa.outp_ON(channel=3)
-                    sleep(0.5)
-                    self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -313,7 +291,7 @@ class Reference:
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                # print(reg_data)
+                print(reg_data)
                 self.write_device(reg_data)
             if re.match('force', instruction):
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
@@ -371,7 +349,6 @@ class Reference:
         self.supplies_8.outp_OFF(channel=1)
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
-
 
 if __name__ == '__main__':
     ref = Reference()
