@@ -189,6 +189,7 @@ class Reference:
                 self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
                 sleep(0.5)
                 self.supplies_8.setVoltage(channel=1,voltage=3.6)
+                self.supplies_8.setCurrent(channel=1, current=0.2)
                 self.supplies_8.outp_ON(channel=1)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
@@ -236,8 +237,6 @@ class Reference:
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sw',signal_name):
-                    # self.pa.outp_OFF(channel=1)
-                    sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
@@ -246,6 +245,7 @@ class Reference:
                         self.current_priority_set = True
                     # self.pa.setCurrent_Priority(channel=1)
                     self.pa.setCurrent(channel=1,current=signal_force)
+                    self.pa.set_Limit_Voltage(channel=1, voltage=1)
                     self.pa.outp_ON(channel=1)
                     sleep(0.5)
 
@@ -268,6 +268,12 @@ class Reference:
         print(closest_value)
         print(hex(best_code))
         return closest_value,best_code
+    
+    def waiting_function(self,waiting_instruction:{}):
+        if waiting_instruction:
+            waiting_time = waiting_instruction.get('Delay')
+            print(waiting_time)
+            sleep(float(waiting_time))
         
     def ref_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
@@ -322,6 +328,10 @@ class Reference:
                 closest_values.append(closest_value)
                 print(best_codes)
                 print(closest_values)
+            if re.match('wait', instruction):
+                waiting_instruction = self.parser.extract_wait_instruction(instruction)
+                print(f'Wait : {waiting_instruction}')
+                self.waiting_function(waiting_instruction)
 
     def power_on(self):
         self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
