@@ -27,7 +27,7 @@ class Reference:
         self.mcp = MCP2221()
         self.mcp2317 = MCP2317(mcp=self.mcp)
         self.oscilloscope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
-        self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+        self.pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
         self.supplies_8 = E3648('GPIB0::8::INSTR')
@@ -118,8 +118,8 @@ class Reference:
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
-                self.meter.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
-                self.meter.setCurrent(channel=4, current= 0.2)
+                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                self.pa.setCurrent(channel=4, current= 0.2)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)
@@ -166,7 +166,7 @@ class Reference:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
-                self.meter.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
@@ -201,15 +201,15 @@ class Reference:
                     sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
                 else:
-                    self.meter.outp_OFF(channel=3)
+                    self.pa.outp_OFF(channel=3)
                     sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=6, Enable=True)
                     sleep(0.5)
-                    self.meter.emulMode_2Q(channel=3)
-                    self.meter.setVoltage_Priority(channel=3)
-                    self.meter.setVoltage(channel=3,voltage=3.6)
+                    self.pa.emulMode_2Q(channel=3)
+                    self.pa.setVoltage_Priority(channel=3)
+                    self.pa.setVoltage(channel=3,voltage=3.6)
                     sleep(0.2)
-                    self.meter.outp_ON(channel=3)
+                    self.pa.outp_ON(channel=3)
                     sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
 
@@ -221,18 +221,18 @@ class Reference:
             if re.search('voltage', signal_Unit):
                 self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
             if re.search('current', signal_Unit):
-                meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+                pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=True)
                 sleep(1)
                 self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=True)
                 sleep(0.1)
-                meter.outp_ON(channel=3)
-                meter.setMeter_Range_Auto__Current(channel=3)
+                pa.outp_ON(channel=3)
+                pa.setMeter_Range_Auto__Current(channel=3)
                 sleep(1)
-                measure_values = meter.getCurrent(channel=3)
+                measure_values = pa.getCurrent(channel=3)
                 print(f' value : {measure_values}')
                 sleep(1)
-                meter.outp_OFF(channel=3)
+                pa.outp_OFF(channel=3)
             if re.search('frequency', signal_Unit):
                 self.trim_values,self.reg_value = self.trim_sweep_freq(self.reg_trim,self.LSB_trim,self.MSB_trim)
 
@@ -262,13 +262,13 @@ class Reference:
                     sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
-                    self.meter.emulMode_2Q(channel=1)
+                    self.pa.emulMode_2Q(channel=1)
                     if not self.current_priority_set:
-                        self.meter.setCurrent_Priority(channel=1)
+                        self.pa.setCurrent_Priority(channel=1)
                         self.current_priority_set = True
                     # self.pa.setCurrent_Priority(channel=1)
-                    self.meter.setCurrent(channel=1,current=signal_force)
-                    self.meter.outp_ON(channel=1)
+                    self.pa.setCurrent(channel=1,current=signal_force)
+                    self.pa.outp_ON(channel=1)
                     sleep(0.5)
 
             force_signal_instruction = None
@@ -345,13 +345,25 @@ class Reference:
                 print(best_codes)
                 print(closest_values)
 
+    def power_on(self):
+        self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+        self.supplies_8.setVoltage(channel=1, voltage=5)
+        self.supplies_8.setCurrent(channel=1, current=0.2)
+        self.supplies_8.outp_ON(channel=1)
+        sleep(0.5)
+        self.supplies_8.setVoltage(channel=2, voltage=3.6)
+        self.supplies_8.setCurrent(channel=2, current=0.2)
+        self.supplies_8.outp_ON(channel=2)
+        sleep(0.5)
+        self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
+        self.pa.setVoltage(channel=4,voltage=1.8)
+        self.pa.setCurrent(channel=4, current=0.2)
+        self.pa.outp_ON(channel=4)
+
 
 if __name__ == '__main__':
     ref = Reference()
-    output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
-    ref.meter.setVoltage(channel=4,voltage=1.8)
-    ref.meter.outp_ON(channel=4)
+    ref.power_on()
     ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
     tests = ref.read_yaml(path_to_yaml=Path('Tests.yaml'))
     print(tests)
@@ -375,7 +387,7 @@ if __name__ == '__main__':
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.meter.outp_OFF(channel=4)
+        ref.pa.outp_OFF(channel=4)
         ref.supplies.outp_OFF(channel=1)
         sleep(0.5)
         ref.supplies.outp_OFF(channel=2)
@@ -384,7 +396,7 @@ if __name__ == '__main__':
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.meter.outp_OFF(channel=4)
+        ref.pa.outp_OFF(channel=4)
         ref.supplies.outp_OFF(channel=1)
         sleep(0.5)
         ref.supplies.outp_OFF(channel=2)
@@ -394,7 +406,7 @@ if __name__ == '__main__':
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.meter.outp_OFF(channel=4)
+        ref.pa.outp_OFF(channel=4)
         ref.supplies.outp_OFF(channel=1)
         sleep(0.5)
         ref.supplies.outp_OFF(channel=2)
@@ -405,7 +417,7 @@ ref.ps_gpib.outp_OFF(channel=1)
 ref.ps_gpib.outp_OFF(channel=2)
 ref.supplies.outp_OFF(channel=1)
 ref.supplies.outp_OFF(channel=2)
-ref.meter.outp_OFF(channel=1)
-ref.meter.outp_OFF(channel=4)
+ref.pa.outp_OFF(channel=1)
+ref.pa.outp_OFF(channel=4)
 
 
