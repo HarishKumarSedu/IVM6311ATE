@@ -156,7 +156,7 @@ class Boost:
 
 
     def execute_Enable_Ana_Testpoint(self):
-        startup_procedure = self.procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
+        startup_procedure = self.procedures['Enable_Ana_Testpoint_boost'].loc[0].split('\n')
         for instruction in startup_procedure:
             instruction = instruction.lower()
             if re.match('0x', instruction):
@@ -199,8 +199,6 @@ class Boost:
                     print("SW is shorted on VBAT")
                     sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x27,row=7,col=1,Enable=False)
-                else:
-                    input("Shorted SW with the jumper on the board, or connected SW to a supply")
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
@@ -395,14 +393,14 @@ class Boost:
         print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
-            # print(instruction)
+            print(instruction)
             
             if re.match('run', instruction):
                 if re.findall('startup', instruction):
                     print('Startup Procedure')
                     self.execute_startup()
-                if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
-                    print('Enable Ana TestPoint Procedure')
+                if re.findall('Enable_Ana_Testpoint_boost'.lower(), instruction):
+                    print('Enable Ana TestPoint Procedure boost')
                     self.execute_Enable_Ana_Testpoint()
                 if re.findall('Boost_test_default'.lower(), instruction):
                     print('Enable Boost Test Default Procedure')

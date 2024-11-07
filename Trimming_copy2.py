@@ -214,6 +214,8 @@ class Trimcopy:
 
                     
 
+
+
             return new_register_val1, new_register_val1
 
         except Exception as e:
