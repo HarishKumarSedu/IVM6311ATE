@@ -454,6 +454,9 @@ class N670x:
 
     def set_Limit_Voltage(self,channel:int, voltage:float):
         self.my_instr.write(f"SOURce:VOLTage:LIMit:POSitive:IMMediate:AMPLitude {voltage},(@{str(channel)})")
+
+    def set_Limit_Current(self,channel:int, current:float):
+        self.my_instr.write(f"SOURce:CURR:LIMit:POSitive:IMMediate:AMPLitude {current},(@{str(channel)})")
         
 
 if __name__ == '__main__':
@@ -477,4 +480,5 @@ if __name__ == '__main__':
     # supply.arb_Trigger()
     # supply.outp_ON(channel=3)
     # print(supply.getCurrent(channel=3))
-    supply.set_Limit_Voltage(channel=1,voltage=1.5)
+    supply.setCurrent(channel=4, current=0.2)
+    # supply.set_Limit_Current(channel=4, current=0.2)
