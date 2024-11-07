@@ -360,12 +360,24 @@ class Reference:
         self.pa.setCurrent(channel=4, current=0.2)
         self.pa.outp_ON(channel=4)
 
+    def power_off(self):
+        self.pa.outp_OFF(channel=4)
+        self.pa.outp_OFF(channel=3)
+        self.pa.outp_OFF(channel=1)
+        self.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        self.supplies.outp_OFF(channel=2)
+        sleep(0.1)
+        self.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        self.supplies_8.outp_OFF(channel=2)
+
 
 if __name__ == '__main__':
     ref = Reference()
     ref.power_on()
     ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
-    tests = ref.read_yaml(path_to_yaml=Path('Tests.yaml'))
+    tests = ref.read_yaml(path_to_yaml=Path('Trimming.yaml'))
     print(tests)
     best_codes = []
     closest_values = []
@@ -377,47 +389,39 @@ if __name__ == '__main__':
                 ref.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             ref.ref_DFT(ref_data, test)
+
     except  TypeError as e:
-        print(f'Entered in Exception loop :> {e}')
+        print(f'ZIO Entered in Exception loop :> {e}')
         traceback.print_exc()
         pass 
+
     except  TypeError as e:
         print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.pa.outp_OFF(channel=4)
-        ref.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        ref.supplies.outp_OFF(channel=2)
+        ref.power_off()
         pass 
+
     except  KeyboardInterrupt:
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.pa.outp_OFF(channel=4)
-        ref.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        ref.supplies.outp_OFF(channel=2)
+        ref.power_off()
+
     except  Exception as e:
         print(f'PORCO Entered in Exception loop :> {e}')
         traceback.print_exc()
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.pa.outp_OFF(channel=4)
-        ref.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        ref.supplies.outp_OFF(channel=2)
+        ref.power_off(
+
+        )
 for i in range (0x20,0x27):
     sleep(0.5)
     ref.mcp2317.Switch_reset(device_addr=i)
-ref.ps_gpib.outp_OFF(channel=1)
-ref.ps_gpib.outp_OFF(channel=2)
-ref.supplies.outp_OFF(channel=1)
-ref.supplies.outp_OFF(channel=2)
-ref.pa.outp_OFF(channel=1)
-ref.pa.outp_OFF(channel=4)
+ref.power_off()
 
 
