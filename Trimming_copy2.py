@@ -323,6 +323,7 @@ if __name__ == '__main__':
     trim.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
     sleep(0.5)
     trim.pa.emulMode_2Q(channel=1)
+    trim.pa.set_Limit_Voltage(channel=1,voltage=1.5)
     trim.pa.setCurrent(channel=1,current=0.4)
     trim.pa.outp_ON(channel=1)
 

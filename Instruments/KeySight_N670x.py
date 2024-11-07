@@ -451,6 +451,9 @@ class N670x:
     def Set_4Q(self, channel:int, voltage):
         self.my_instr(f'VOLTage <value>, (@<channel>)')
         self.my_instr.write(f'SOURce:FUNCtion:MODE SOURce,(@{str(channel)})')
+
+    def set_Limit_Voltage(self,channel:int, voltage:float):
+        self.my_instr.write(f"SOURce:VOLTage:LIMit:POSitive:IMMediate:AMPLitude {voltage},(@{str(channel)})")
         
 
 if __name__ == '__main__':
@@ -474,4 +477,4 @@ if __name__ == '__main__':
     # supply.arb_Trigger()
     # supply.outp_ON(channel=3)
     # print(supply.getCurrent(channel=3))
-    supply.setCurrent_Priority(channel=1)
+    supply.set_Limit_Voltage(channel=1,voltage=1.5)
