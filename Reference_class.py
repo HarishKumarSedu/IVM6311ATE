@@ -119,6 +119,7 @@ class Reference:
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
                 self.meter.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                self.meter.setCurrent(channel=4, current= 0.2)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)

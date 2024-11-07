@@ -134,71 +134,77 @@ class Trim:
 
     def sweep_trim_bit_freq_two_registers(self, reg1, lsb1, msb1, reg2, lsb2, msb2):
         try:
+            defval_reg1 = 0x7F
+            defval_reg2 = 0xD0
+            self.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB1, defval_reg1])
+            self.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB2, defval_reg2])
+
             # Leggi i valori iniziali dei registri
             reg_val1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0]
             reg_val2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg2], Nobytes=1)[0]
-            
+
             print(f"Registro 1 iniziale: {hex(reg_val1)}, Registro 2 iniziale: {hex(reg_val2)}")
 
-            self.scope.set_HScale('100E-6')
-            sleep(1)
-            self.scope.set_trigger__mode(mode='NORM')
-            self.scope.set_HScale('10E-6')
-            self.scope.set_Channel__VScale(scale=0.5)
-
-            # Calcola le iterazioni per entrambi i registri
-            n_iterations1 = (1 << (msb1 - lsb1 + 1))
-            n_iterations2 = (1 << (msb2 - lsb2 + 1))
-
-            # Crea le maschere per entrambi i registri
             mask1 = ((1 << (msb1 - lsb1 + 1)) - 1) << lsb1
             mask2 = ((1 << (msb2 - lsb2 + 1)) - 1) << lsb2
-            
-            # Conserva i bit esterni per entrambi i registri
+
             external_bits1 = reg_val1 & ~mask1
             external_bits2 = reg_val2 & ~mask2
-            
-            # Zero i bit interni prima di iniziare
             reg_val1_zeroed = reg_val1 & ~mask1
             reg_val2_zeroed = reg_val2 & ~mask2
 
-            # Scrivi i registri con i bit azzerati
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, reg_val1_zeroed])
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, reg_val2_zeroed])
 
-            trim_values = []
-            modified_registers = []
-
-            # Loop per incrementare i bit nei registri
-            for increment2 in range(n_iterations2):
-                # Modifica i bit interni per reg2
-                internal_bits2 = (increment2 << lsb2) & mask2
+            # Ciclo per gli incrementi di increment2 e increment1
+            for increment2 in [0xD0, 0xF0]:
+                internal_bits2 = increment2 & mask2
                 new_register_val2 = external_bits2 | internal_bits2
+                self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
 
-                for increment1 in range(n_iterations1):
-                    # Modifica i bit interni per reg1
+                # Imposta il range per increment1 in base al valore di increment2
+                if increment2 == 0xD0:
+                    increment1 = 0x7F
+                    increment_step = -1
+                    end_value = 0x70
+                else:
+                    increment1 = 0x7F
+                    increment_step = -1
+                    end_value = 0x70
+
+                while (increment_step == -1 and increment1 >= end_value) or (increment_step == 1 and increment1 <= end_value):
                     internal_bits1 = (increment1 << lsb1) & mask1
                     new_register_val1 = external_bits1 | internal_bits1
-
-                    modified_registers.append((new_register_val1, new_register_val2))
-
-                    # Scrivi i nuovi valori dei registri
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, new_register_val1])
-                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
 
-                    sleep(1)  # Tempo di stabilizzazione
+                    sleep(0.5)  # Tempo di stabilizzazione
+                    self.mcp2317.Switch(device_addr=0x24, row=2, col=1, Enable=True)
+                    sleep(0.5)
 
-                    # Misura la frequenza e aggiungila alla lista
-                    freq = sum(self.scope.meas_Freq(Meas='MEAS2') for _ in range(20)) / 20
-                    trim_values.append(freq)
+                    try:
+                        valore_multimetro = self.meter.meas_V()
+                        
+                        # Stampa i valori di increment1, increment2 e multimetro
+                        print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, Valore multimetro: {valore_multimetro}")
 
-                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}")
+                        # Controllo del valore del multimetro
+                        if 0.55 <= valore_multimetro <= 0.70:
+                            print("Valore entro i limiti desiderati.")
+                            return valore_multimetro, new_register_val1, new_register_val2
 
-            print("Valori di frequenza misurati:", trim_values)
-            return trim_values, modified_registers
+                    except Exception as e:
+                        print(f"Errore di misurazione: {e}")
+                        continue  # Prosegui al prossimo tentativo in caso di errore di misurazione
+
+                    increment1 += increment_step
+
+            print("Non è stato possibile trovare un valore nel range desiderato.")
+            return 0.0, defval_reg1, defval_reg2  # Valore di default se non si trova un valore valido
 
         except Exception as e:
             print(f"Errore durante l'esecuzione: {e}")
+            return 0.0, 0, 0  # Valori di default in caso di errore
+
 
 if __name__ == '__main__':
     mcp = MCP2221()

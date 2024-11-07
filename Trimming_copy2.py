@@ -140,87 +140,76 @@ class Trimcopy:
 
     def sweep_trim_bit_freq_two_registers(self, reg1, lsb1, msb1, reg2, lsb2, msb2):
         try:
-
             defval_reg1 = 0x7F
             defval_reg2 = 0xD0
-            trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data = [0xB1, defval_reg1])
-            trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data = [0xB2, defval_reg2])
+            trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB1, defval_reg1])
+            trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB2, defval_reg2])
+
             # Leggi i valori iniziali dei registri
             reg_val1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0]
             reg_val2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg2], Nobytes=1)[0]
-            
+
             print(f"Registro 1 iniziale: {hex(reg_val1)}, Registro 2 iniziale: {hex(reg_val2)}")
 
-
-            self.scope.single__Trigger__Mode()
-            self.scope.set_HScale('100E-6')
-            sleep(1)
-            self.scope.set_trigger__mode(mode='NORM')
-            self.scope.set_HScale('10E-6')
-            self.scope.set_Channel__VScale(scale=0.5)
-
-            # Calcola le iterazioni per reg1
-            n_iterations1 = (1 << (msb1 - lsb1 + 1))
-
-            # Crea le maschere per entrambi i registri
             mask1 = ((1 << (msb1 - lsb1 + 1)) - 1) << lsb1
             mask2 = ((1 << (msb2 - lsb2 + 1)) - 1) << lsb2
-            
-            # Conserva i bit esterni per entrambi i registri
+
             external_bits1 = reg_val1 & ~mask1
             external_bits2 = reg_val2 & ~mask2
-            
-            # Zero i bit interni prima di iniziare
             reg_val1_zeroed = reg_val1 & ~mask1
             reg_val2_zeroed = reg_val2 & ~mask2
 
-            # Scrivi i registri con i bit azzerati
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, reg_val1_zeroed])
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, reg_val2_zeroed])
 
-            trim_values = []
-            modified_registers = []
-            Triggered = False
-
-            # Imposta i valori fissi per increment2
-            increment2_values = [0xD0, 0xF0]
-
-            for increment2 in increment2_values:
-                # Imposta i bit interni per reg2
+            # Ciclo per gli incrementi di increment2 e increment1
+            for increment2 in [0xD0, 0xF0]:
                 internal_bits2 = increment2 & mask2
                 new_register_val2 = external_bits2 | internal_bits2
+                self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
 
+                # Imposta il range per increment1 in base al valore di increment2
                 if increment2 == 0xD0:
-                    # Primo ciclo con increment2 = 0xD0, decremento di increment1 da 0x7F a 0x70
-                    increment1_range = range(0x7F, 0x6F, -1)
+                    increment1 = 0x7F
+                    increment_step = -1
+                    end_value = 0x70
                 else:
-                    # Secondo ciclo con increment2 = 0xF0, incremento di increment1 da 0x70 a 0x7F
-                    increment1_range = range(0x70, 0x80)
+                    increment1 = 0x7F
+                    increment_step = -1
+                    end_value = 0x70
 
-                for increment1 in increment1_range:
-                    # Modifica i bit interni per reg1
+                while (increment_step == -1 and increment1 >= end_value) or (increment_step == 1 and increment1 <= end_value):
                     internal_bits1 = (increment1 << lsb1) & mask1
                     new_register_val1 = external_bits1 | internal_bits1
-
-                    modified_registers.append((new_register_val1, new_register_val2))
-
-                    # Scrivi i nuovi valori dei registri
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, new_register_val1])
-                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
 
-                    sleep(1)  # Tempo di stabilizzazione
-                    # Stampa i valori attuali dei registri
-                    print(f"Registro 1: {hex(new_register_val1)}, Registro 2: {hex(new_register_val2)}")
+                    sleep(0.5)  # Tempo di stabilizzazione
+                    self.mcp2317.Switch(device_addr=0x24, row=2, col=1, Enable=True)
+                    sleep(0.5)
 
-                    
+                    try:
+                        valore_multimetro = self.meter.meas_V()
+                        
+                        # Stampa i valori di increment1, increment2 e multimetro
+                        print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, Valore multimetro: {valore_multimetro}")
 
+                        # Controllo del valore del multimetro
+                        if 0.55 <= valore_multimetro <= 0.70:
+                            print("Valore entro i limiti desiderati.")
+                            return valore_multimetro, new_register_val1, new_register_val2
 
+                    except Exception as e:
+                        print(f"Errore di misurazione: {e}")
+                        continue  # Prosegui al prossimo tentativo in caso di errore di misurazione
 
-            return new_register_val1, new_register_val1
+                    increment1 += increment_step
+
+            print("Non è stato possibile trovare un valore nel range desiderato.")
+            return 0.0, defval_reg1, defval_reg2  # Valore di default se non si trova un valore valido
 
         except Exception as e:
             print(f"Errore durante l'esecuzione: {e}")
-
+            return 0.0, 0, 0  # Valori di default in caso di errore
 
 
 if __name__ == '__main__':
@@ -257,6 +246,7 @@ if __name__ == '__main__':
     sleep(0.5)
 
     trim.pa.setVoltage(channel=4, voltage=1.8)
+    trim.pa.setCurrent(channel=4, current=0.2)
     trim.pa.outp_ON(channel=4)
     sleep(1)
     trim.mcp2317.Switch(device_addr=0x20,row = 1, col = 4, Enable=True)
@@ -302,7 +292,7 @@ if __name__ == '__main__':
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x00])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB0, 0x02])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB2, 0xD7])
-    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xC0, 0x03])
+    trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xC0, 0x02])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xFE, 0x01])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x1A, 0x10])
     trim.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0x03, 0x07])
@@ -324,7 +314,7 @@ if __name__ == '__main__':
     sleep(0.5)
     trim.pa.emulMode_2Q(channel=1)
     trim.pa.set_Limit_Voltage(channel=1,voltage=1.5)
-    trim.pa.setCurrent(channel=1,current=0.4)
+    trim.pa.setCurrent(channel=1,current=0.2)
     trim.pa.outp_ON(channel=1)
 
     reg1 = 0xB1
@@ -334,13 +324,15 @@ if __name__ == '__main__':
     lsb2 = 5
     msb2 = 5
     target = 1.8
-    trim_values, modified_registers = trim.sweep_trim_bit_freq_two_registers(reg1,lsb1,msb1,reg2,lsb2,msb2)
+    dmm_value, defval_reg1, defval_reg2 = trim.sweep_trim_bit_freq_two_registers(reg1,lsb1,msb1,reg2,lsb2,msb2)
+    print(dmm_value,defval_reg1,defval_reg2)
     # closest_value = trim.find_closest_value(trim_values, target)
     # print(closest_value)
     # trim.find_best_code(trim_values,modified_registers, target)
     for i in range (0x20,0x27):
         sleep(0.5)
         trim.mcp2317.Switch_reset(device_addr=i)
+        sleep(1)
     trim.pa.outp_OFF(channel=1)
     trim.pa.outp_OFF(channel=4)
     trim.supplies_8.outp_OFF(channel=1)
