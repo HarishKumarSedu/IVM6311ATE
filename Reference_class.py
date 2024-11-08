@@ -44,6 +44,9 @@ class Reference:
         self.reg_trim2 = None
         self.LSB_trim2 = None
         self.MSB_trim2 = None
+        self.valore_multimetro = None
+        self.new_register_val1=None
+        self.new_register_val2 = None
         self.current_priority_set = False
 
     def value_clean(self,value:str):
@@ -259,7 +262,7 @@ class Reference:
 
     def trim_OCP(self,reg_trim, lsb, msb, reg_trim2,lsb2,msb2):
         self.reg_value,self.reg_trim, self.reg_trim2 = self.trim.sweep_trim_bit_freq_two_registers(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
-        return self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2
+        return self.valore_multimetro, self.new_register_val1, self.new_register_val2
     
     def trim_sweep_voltage(self,reg_trim,lsb,msb):
         self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
@@ -331,7 +334,6 @@ class Reference:
                     self.reg_trim2 = int(reg_instr.get('regaddr2'), 16)
                     self.LSB_trim2 = int(reg_instr.get('lsb2'))
                     self.MSB_trim2 = int(reg_instr.get('msb2'))
-                    print(hex(self.reg_trim),hex(self.LSB_trim),hex(self.MSB_trim),hex(self.reg_trim2),hex(self.LSB_trim2),hex(self.MSB_trim2 ))
             if re.match('calculate', instruction):
                 closest_value,best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
                 best_codes.append(best_code)
