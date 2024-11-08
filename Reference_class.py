@@ -393,7 +393,7 @@ class Reference:
             df = pd.DataFrame([data_to_save])
 
             with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
-                df.to_excel(writer, sheet_name="Results", index=False)
+                df.to_excel(writer, sheet_name="Trimming", index=False)
 
             wb = load_workbook(filename)
             sheet = wb['Results']

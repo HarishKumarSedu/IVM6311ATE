@@ -14,6 +14,7 @@ import yaml
 from pathlib import Path
 from box import ConfigBox
 from box.exceptions import BoxValueError
+from openpyxl import load_workbook 
 
 class AZ_comp:
 
@@ -33,7 +34,8 @@ class AZ_comp:
         self.slave_address = 0x6c
         self.measure_value = None
         self.measure_values = []
-
+        self.row_names = []
+ 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
         # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
@@ -251,6 +253,40 @@ class AZ_comp:
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
 
+    def save_to_excel(self, filename="output.xlsx"):
+        try:
+            data_to_save = {
+                "Row Name": [self.row_names],
+                "measure_values": self.measure_values if hasattr(self, 'measure_values') else None,
+            }
+
+            df = pd.DataFrame([data_to_save])
+
+            with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
+                df.to_excel(writer, sheet_name="AZ_comp", index=False)
+
+            wb = load_workbook(filename)
+            sheet = wb['AZ_comp']
+
+            sheet.cell(row=2, column=1, value='3rd_STG_Current')  
+            sheet.cell(row=3, column=1, value='2nd_STG_Current')           
+            sheet.cell(row=4, column=1, value='1st_STG_Current')      
+            sheet.cell(row=5, column=1, value='Ground_AZCOMP') 
+            sheet.cell(row=6, column=1, value='OUTN_EXT_PRT')   
+            sheet.cell(row=7, column=1, value='OUTP_EXT_PRT') 
+            sheet.cell(row=8, column=1, value='VCM_AVDD')   
+
+            if hasattr(self, 'measure_values'):
+                for i, value in enumerate(self.measure_values):
+                    sheet.cell(row=i + 2, column=2, value=value)  
+
+            wb.save(filename)
+
+            print(f"File saved {filename}.")
+        except Exception as e:
+            print(f"Error during saving: {e}")
+
+
 if __name__ == '__main__':
     az_comp = AZ_comp()
     az_comp.power_on()
@@ -264,7 +300,7 @@ if __name__ == '__main__':
                 az_comp.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             az_comp.AZcomp_DFT(AZ_COMP_data, test)
-
+        az_comp.save_to_excel("output.xlsx")
     except  TypeError as e:
         print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
