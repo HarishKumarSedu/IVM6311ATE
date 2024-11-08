@@ -35,7 +35,7 @@ class Reference:
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.slave_address = 0x6c
-        self.trim = Trim(mcp=self.mcp)
+        self.trim = Trim(mcp=self.mcp, mcp2317=self.mcp2317)
         self.reg_trim = None
         self.LSB_trim = None
         self.MSB_trim = None

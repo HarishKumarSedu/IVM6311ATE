@@ -8,8 +8,7 @@ from time import sleep
 
 
 class MCP2317:
-    def __init__(self, mcp='') -> None:
-
+    def __init__(self, mcp) -> None:
         self.IODIRA = 0x00 # Bank GPIO congurations :  1 - InPut , 2 - Output ; default all Bank GPIOs are inputs 
         self.IODIRB = 0x01 
         self.GPIOA  = 0x12 # GPIO BANK output set 
@@ -85,7 +84,7 @@ if __name__=='__main__':
     mcp2317 = MCP2317(mcp=mcp)  
     # time.sleep(1)
     # mcp2317.Switch(device_addr=0x22, row=6, col=5, Enable=True)
-    mcp2317.Switch(device_addr=0x23, row = 8, col = 7, Enable= True)
+    mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= False)
     # sleep(0.5)
     # mcp2317.Switch(device_addr=0x23, row=7, col=6, Enable=True)
     # mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=False)

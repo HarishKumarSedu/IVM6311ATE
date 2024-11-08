@@ -1,5 +1,5 @@
-from SwitchMatrix.mcp2221 import MCP2221
-from SwitchMatrix.mcp2317 import MCP2317
+# from SwitchMatrix.mcp2221 import MCP2221
+# from SwitchMatrix.mcp2317 import MCP2317
 from Instruments.Keysight_34461 import A34461
 from Instruments.DigitalScope import dpo_2014B
 import pandas as pd
@@ -7,12 +7,11 @@ from time import sleep
 
 class Trim:
 
-    def __init__(self,mcp):
+    def __init__(self,mcp,mcp2317):
         self.meter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
-        mcp = MCP2221()
         self.mcp = mcp
         self.scope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
-        self.mcp2317 = MCP2317(mcp=self.mcp)
+        self.mcp2317 = mcp2317
         self.slave_address = 0x6c
 
     def sweep_trim_bit_voltage(self, reg_trim, lsb, msb):
@@ -136,8 +135,8 @@ class Trim:
         try:
             defval_reg1 = 0x7F
             defval_reg2 = 0xD0
-            self.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB1, defval_reg1])
-            self.mcp.mcpWrite(SlaveAddress=trim.slave_address, data=[0xB2, defval_reg2])
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, defval_reg1])
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB2, defval_reg2])
 
             # Leggi i valori iniziali dei registri
             reg_val1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0]
@@ -206,9 +205,9 @@ class Trim:
             return 0.0, 0, 0  # Valori di default in caso di errore
 
 
-if __name__ == '__main__':
-    mcp = MCP2221()
-    trim = Trim(mcp=mcp)
+# if __name__ == '__main__':
+#     mcp = MCP2221()
+#     trim = Trim(mcp=mcp)
     # reg1 = 0xB1
     # reg2 = 0xB2
     # lsb1 = 0
@@ -220,4 +219,3 @@ if __name__ == '__main__':
     # closest_value = trim.find_closest_value(trim_values, target)
     # # print(closest_value)
     # trim.find_best_code(trim_values,modified_registers, target)
-
