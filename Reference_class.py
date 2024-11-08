@@ -17,6 +17,7 @@ import yaml
 from pathlib import Path
 from box import ConfigBox
 from box.exceptions import BoxValueError
+from openpyxl import load_workbook 
 
 class Reference:
 
@@ -44,10 +45,13 @@ class Reference:
         self.reg_trim2 = None
         self.LSB_trim2 = None
         self.MSB_trim2 = None
+        self.best_codes = []
+        self.closest_values = []
         self.valore_multimetro = None
         self.new_register_val1=None
         self.new_register_val2 = None
         self.current_priority_set = False
+        self.row_names = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -117,7 +121,7 @@ class Reference:
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction) 
                 sleep(0.5)
-                print(reg_data)
+                # print(reg_data)
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
@@ -155,7 +159,7 @@ class Reference:
             mask = int(mask)
             # Perform bitwise operations
             device_data = (device_data & mask) | (data_value << int(lsb))
-            print(hex(device_data))
+            # print(hex(device_data))
             # Write the new value to the device
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg_addr, device_data])
         else:
@@ -181,7 +185,7 @@ class Reference:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                print(reg_data)
+                # print(reg_data)
                 self.write_device(reg_data)
             if re.match('Force__VBIAS__5V'.lower(), instruction):
                 print('Force__VBIAS__5V')
@@ -201,8 +205,8 @@ class Reference:
             signal_Unit = measure_signal.get('Unit')
             signal_Name = measure_signal.get('Signal')
             measure_values = None
-            print(signal_Unit)
-            print(signal_Name)
+            # print(signal_Unit)
+            # print(signal_Name)
             if re.search('voltage', signal_Unit):
                 if re.search('fsyn', signal_Name):
                     self.trim_OCP(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
@@ -218,7 +222,7 @@ class Reference:
                 pa.setMeter_Range_Auto__Current(channel=3)
                 sleep(1)
                 measure_values = pa.getCurrent(channel=3)
-                print(f' value : {measure_values}')
+                # print(f' value : {measure_values}')
                 sleep(1)
                 pa.outp_OFF(channel=3)
             if re.search('frequency', signal_Unit):
@@ -229,7 +233,7 @@ class Reference:
         if force_signal_instruction:
             signal_Unit = force_signal_instruction.get('Unit')
             signal_name = force_signal_instruction.get('Signal')
-            print(signal_Unit)
+            # print(signal_Unit)
             if re.search('V', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('outn', signal_name):
@@ -261,7 +265,10 @@ class Reference:
             force_signal_instruction = None
 
     def trim_OCP(self,reg_trim, lsb, msb, reg_trim2,lsb2,msb2):
-        self.reg_value,self.reg_trim, self.reg_trim2 = self.trim.sweep_trim_bit_freq_two_registers(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
+        self.valore_multimetro, self.new_register_val1, self.new_register_val2= self.trim.sweep_trim_bit_freq_two_registers(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
+        ref.best_codes.append(ref.new_register_val1)
+        ref.best_codes.append(ref.new_register_val2)
+        ref.closest_values.append(ref.valore_multimetro)
         return self.valore_multimetro, self.new_register_val1, self.new_register_val2
     
     def trim_sweep_voltage(self,reg_trim,lsb,msb):
@@ -277,24 +284,24 @@ class Reference:
     def find_best_code(self, trim_values, reg_value, typical):
         closest_value = self.trim.find_closest_value(trim_values,typical)
         best_code = self.trim.find_best_code(trim_values, reg_value, typical)
-        print(closest_value)
-        print(hex(best_code))
+        # print(closest_value)
+        # print(hex(best_code))
         return closest_value,best_code
     
     def waiting_function(self,waiting_instruction:{}):
         if waiting_instruction:
             waiting_time = waiting_instruction.get('Delay')
-            print(waiting_time)
+            # print(waiting_time)
             sleep(float(waiting_time))
         
     def ref_DFT(self,data=pd.DataFrame({}), test_name=''):
         instructions = data[test_name].loc[3].split('\n')
         print(data[test_name].loc[6])
         typical = self.value_clean(data[test_name].loc[6])
-        print(typical)
+        # print(typical)
         for instruction in instructions:
             instruction = instruction.lower()
-            print(instruction)
+            # print(instruction)
             
             if re.match('run', instruction):
                 if re.findall('startup', instruction):
@@ -309,7 +316,7 @@ class Reference:
 
             if re.match('0x',instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                print(reg_data)
+                # print(reg_data)
                 self.write_device(reg_data)
             if re.match('force', instruction):
                 force_signal_instruction = self.parser.extract_Force__Instruction(instruction)
@@ -322,7 +329,7 @@ class Reference:
             if re.match('trim', instruction):
                 reg_instr = self.parser.extract_TrimSweep_Instruction(instruction)
                 print(f'Trim instruction : {reg_instr}')
-                print(type(reg_instr))
+                # print(type(reg_instr))
                 if len(reg_instr) == 4:
                     self.reg_trim = int(reg_instr.get('regaddr1'), 16)
                     self.LSB_trim = int(reg_instr.get('lsb1'))
@@ -335,11 +342,11 @@ class Reference:
                     self.LSB_trim2 = int(reg_instr.get('lsb2'))
                     self.MSB_trim2 = int(reg_instr.get('msb2'))
             if re.match('calculate', instruction):
-                closest_value,best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
-                best_codes.append(best_code)
-                closest_values.append(closest_value)
-                print(best_codes)
-                print(closest_values)
+                self.closest_value,self.best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
+                self.best_codes.append(self.best_code)
+                self.closest_values.append(self.closest_value)
+                # print(best_codes)
+                # print(closest_values)
             if re.match('wait', instruction):
                 waiting_instruction = self.parser.extract_wait_instruction(instruction)
                 print(f'Wait : {waiting_instruction}')
@@ -375,6 +382,44 @@ class Reference:
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
 
+    def save_to_excel(self, filename="output.xlsx"):
+        try:
+            data_to_save = {
+                "Row Name": [self.row_names],
+                "Best Codes": self.best_codes if hasattr(self, 'best_codes') else None,
+                "Closest Values": self.closest_values if hasattr(self, 'closest_values') else None,
+            }
+
+            df = pd.DataFrame([data_to_save])
+
+            with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
+                df.to_excel(writer, sheet_name="Results", index=False)
+
+            wb = load_workbook(filename)
+            sheet = wb['Results']
+
+            sheet.cell(row=2, column=1, value='VBGR_ADJ_TRIM')  
+            sheet.cell(row=3, column=1, value='TSDN')           
+            sheet.cell(row=4, column=1, value='FRO_CLOCK')      
+            sheet.cell(row=5, column=1, value='BST_OCP_TRIM_reg1') 
+            sheet.cell(row=6, column=1, value='BST_OCP_TRIM_reg2')   
+
+            if hasattr(self, 'best_codes'):
+                best_codes_hex = [format(x, 'X') for x in self.best_codes]  
+                for i, code in enumerate(best_codes_hex):
+                    sheet.cell(row=i + 2, column=2, value=code)  
+
+            if hasattr(self, 'closest_values'):
+                for i, value in enumerate(self.closest_values):
+                    sheet.cell(row=i + 2, column=3, value=value)  
+
+            wb.save(filename)
+
+            print(f"File saved {filename}.")
+        except Exception as e:
+            print(f"Error during saving: {e}")
+
+
 if __name__ == '__main__':
     ref = Reference()
     ref.power_on()
@@ -391,6 +436,7 @@ if __name__ == '__main__':
                 ref.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             ref.ref_DFT(ref_data, test)
+        ref.save_to_excel("output.xlsx")
 
     except  TypeError as e:
         print(f'ZIO Entered in Exception loop :> {e}')

@@ -77,7 +77,7 @@ class Trim:
     def sweep_trim_bit_freq(self, reg_trim, lsb, msb):
         # Read the value of the register (assuming mcpRead returns a list with one byte)
         reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Take the first element of the list
-        print(hex(reg_val))
+        # print(hex(reg_val))
         self.scope.set_HScale('100E-6')
         sleep(2)
         # self.scope.set_autoSet()
@@ -135,12 +135,12 @@ class Trim:
         try:
             defval_reg1 = 0x7F
             defval_reg2 = 0xD0
-            print(reg1)
-            print(lsb1)
-            print(msb1)
-            print(reg2)
-            print(lsb2)
-            print(msb2)
+            # print(reg1)
+            # print(lsb1)
+            # print(msb1)
+            # print(reg2)
+            # print(lsb2)
+            # print(msb2)
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, defval_reg1])
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, defval_reg2])
 
@@ -193,8 +193,8 @@ class Trim:
                         print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, Valore multimetro: {valore_multimetro}")
 
                        
-                        if 0.55 <= valore_multimetro <= 0.75:
-                            print(valore_multimetro, new_register_val1, new_register_val2)
+                        if 0.45 <= valore_multimetro <= 0.85:
+                            # print(valore_multimetro, new_register_val1, new_register_val2)
                             return valore_multimetro, new_register_val1, new_register_val2
 
                     except Exception as e:
