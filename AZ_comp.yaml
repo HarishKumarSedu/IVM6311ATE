@@ -1,0 +1,10 @@
+AZ_COMP:
+  - 3rd_STG_Current
+  - 2nd_STG_Current  
+  - 1st_STG_Current 
+  - Ground_AZCOMP
+  - OUTN_EXT_PRT
+  - OUTP_EXT_PRT
+  - VCM_AVDD
+
+

@@ -464,9 +464,8 @@ if __name__ == '__main__':
         for i in range (0x20,0x27):
             sleep(0.5)
             ref.mcp2317.Switch_reset(device_addr=i)
-        ref.power_off(
+        ref.power_off()
 
-        )
 for i in range (0x20,0x27):
     sleep(0.5)
     ref.mcp2317.Switch_reset(device_addr=i)

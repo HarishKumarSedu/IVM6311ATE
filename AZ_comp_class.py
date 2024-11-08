@@ -23,13 +23,16 @@ class AZ_comp:
         self.procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
         self.mcp = MCP2221()
         self.mcp2317 = MCP2317(mcp=self.mcp)
-        self.meter = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
+        self.pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
+        self.supplies_8 = E3648('GPIB0::8::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
         self.ammeter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
         self.slave_address = 0x6c
+        self.measure_value = None
+        self.measure_values = []
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -107,10 +110,12 @@ class AZ_comp:
                 self.write_device(reg_data) 
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
+                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                sleep(0.5)
+                self.pa.setCurrent(channel=4, current= 0.2)
+                sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)
-                self.meter.setVoltage(channel=4, voltage=1.8)
-                self.meter.outp_ON(channel=4)
 
     def write_device(self,data: {}):
         device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[int(data.get('RegAddr'), 16)])[0]
@@ -132,18 +137,22 @@ class AZ_comp:
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 print('Force SDWN OPEN')
+                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
+                sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
+                sleep(0.5)
 
     def measure_value_check(self,measure_signal: {}, typical: float):
         if measure_signal:
             signal_Unit = measure_signal.get('Unit')
-            measure_values = None
+            # measure_values = None
             print(signal_Unit)
             if re.search('voltage', signal_Unit):
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
                 sleep(0.1)
-                measure_values = self.voltmeter.meas_V()
-                print(f' value : {measure_values}')
+                self.measure_value = self.voltmeter.meas_V()
+                self.measure_values.append(self.measure_value)
+                print(f' value : {self.measure_values}')
 
             if re.search('current', signal_Unit):
                 sleep(0.5)
@@ -151,14 +160,14 @@ class AZ_comp:
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=True)
                 sleep(0.5)
-                measure_values = self.ammeter.meas_I()
-                print(f' value : {measure_values}')
+                self.measure_value = self.ammeter.meas_I()
+                self.measure_values.append(self.measure_value)
+                print(f' value : {self.measure_values}')
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=False)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=False)
 
             
-
     def force_signal(self,force_signal_instruction: {}):
         if force_signal_instruction:
             signal_Unit = force_signal_instruction.get('Unit')
@@ -208,15 +217,45 @@ class AZ_comp:
                 print(f'Measure Signal : {measure_signal}')
                 self.measure_value_check(measure_signal=measure_signal, typical=typical)
 
+    def power_on(self):
+        self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
+        self.supplies_8.setVoltage(channel=1, voltage=5)
+        self.supplies_8.setCurrent(channel=1, current=0.2)
+        self.supplies_8.outp_ON(channel=1)
+        self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
+        sleep(0.5)
+        self.supplies_8.setVoltage(channel=2, voltage=3.6)
+        self.supplies_8.setCurrent(channel=2, current=0.2)
+        sleep(0.5)
+        self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
+        sleep(0.5)
+        self.supplies_8.outp_ON(channel=2)
+        sleep(0.5)
+        self.pa.setVoltage(channel=4,voltage=1.8)
+        self.pa.setCurrent(channel=4, current=0.2)
+        self.pa.outp_ON(channel=4)
+
+    def power_off(self):
+        self.pa.outp_OFF(channel=4)
+        self.pa.outp_OFF(channel=3)
+        self.pa.outp_OFF(channel=1)
+        self.ps_gpib.outp_OFF(channel=1)
+        sleep(0.5)
+        self.ps_gpib.outp_OFF(channel=2)
+        sleep(0.5)
+        self.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        self.supplies.outp_OFF(channel=2)
+        sleep(0.1)
+        self.supplies_8.outp_OFF(channel=1)
+        sleep(0.5)
+        self.supplies_8.outp_OFF(channel=2)
 
 if __name__ == '__main__':
     az_comp = AZ_comp()
-    output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-    output_control.output_on(channel1=1, channel2=2 , voltage1=4.0, voltage2=1.8, current1=0.2, current2=0.2)
-    az_comp.meter.setVoltage(channel=4, voltage=1.8)
-    az_comp.meter.outp_ON(channel=4)
+    az_comp.power_on()
     AZ_COMP_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='AZ_COMP')
-    tests = az_comp.read_yaml(path_to_yaml=Path('Tests.yaml'))
+    tests = az_comp.read_yaml(path_to_yaml=Path('AZ_comp.yaml'))
     print(tests)
     try:
         for test in tests.AZ_COMP:
@@ -225,44 +264,32 @@ if __name__ == '__main__':
                 az_comp.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             az_comp.AZcomp_DFT(AZ_COMP_data, test)
+
     except  TypeError as e:
         print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
         for i in range (0x20,0x27):
             sleep(0.5)
             az_comp.mcp2317.Switch_reset(device_addr=i)
-        az_comp.meter.outp_OFF(channel=4)
-        az_comp.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        az_comp.supplies.outp_OFF(channel=2)
+        az_comp.power_off()
         pass 
+
     except  KeyboardInterrupt:
         for i in range (0x20,0x27):
             sleep(0.5)
             az_comp.mcp2317.Switch_reset(device_addr=i)
-        az_comp.meter.outp_OFF(channel=4)
-        az_comp.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        az_comp.supplies.outp_OFF(channel=2)
+        az_comp.power_off()
+
     except  Exception as e:
         print(f'PORCO Entered in Exception loop :> {e}')
         traceback.print_exc()
         for i in range (0x20,0x27):
             sleep(0.5)
             az_comp.mcp2317.Switch_reset(device_addr=i)
-        az_comp.meter.outp_OFF(channel=4)
-        az_comp.supplies.outp_OFF(channel=1)
-        sleep(0.5)
-        az_comp.supplies.outp_OFF(channel=2)
+        az_comp.power_off()
 
     for i in range (0x20,0x27):
         sleep(0.5)
         az_comp.mcp2317.Switch_reset(device_addr=i)
-    az_comp.ps_gpib.outp_OFF(channel=1)
-    az_comp.ps_gpib.outp_OFF(channel=2)
-    az_comp.supplies.outp_OFF(channel=1)
-    az_comp.supplies.outp_OFF(channel=2)
-    az_comp.meter.outp_OFF(channel=1)
-    az_comp.meter.outp_OFF(channel=4)
-    # finally:
+az_comp.power_off()
 
