@@ -52,6 +52,7 @@ class Reference:
         self.new_register_val2 = None
         self.current_priority_set = False
         self.row_names = []
+        self.burn_var = True
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -492,8 +493,9 @@ if __name__ == '__main__':
             print(f'............ {test}')
             ref.ref_DFT(ref_data, test)
         ref.save_to_excel("DFT_6311_Result.xlsx")
-        ref.write_trimming_bit()
-        ref.burn_procedure()
+        if ref.burn_var == True:
+            ref.write_trimming_bit()
+            ref.burn_procedure()
 
     except  TypeError as e:
         print(f'ZIO Entered in Exception loop :> {e}')

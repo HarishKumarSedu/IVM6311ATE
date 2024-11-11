@@ -16,7 +16,7 @@ class Trim:
 
     def sweep_trim_bit_voltage(self, reg_trim, lsb, msb):
 
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, 0x70]) ####Set default vbg_curve
+        # self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, 0x70]) ####Set default vbg_curve
         # Read the value of the register (assuming mcpRead returns a list with one byte)
         reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Take the first element of the list
 
