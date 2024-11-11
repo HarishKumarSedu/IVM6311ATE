@@ -420,29 +420,35 @@ class Reference:
             print(f"Error during saving: {e}")
     
     def write_trimming_bit(self):
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0X01])
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB0, self.best_codes[0]])
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB3, self.best_codes[1]])
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xEF, self.best_codes[2]])
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, self.best_codes[3]])
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB2, self.best_codes[4]])
+        
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0x01])
+        registers = [0xB0, 0xB3, 0xEF, 0xB1, 0xB2]
+        for reg, code in zip(registers, self.best_codes):
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg, code])
 
     def burn_procedure(self):
         registers = [0xB0, 0xB3, 0xEF, 0xB1, 0xB2]
         names = ["B0", "B3", "EF", "B1", "B2"]
 
-        # Lettura e stampa dei valori
         read_values = [self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg], Nobytes=1)[0] for reg in registers]
         for i, name in enumerate(names):
             print(f"value read from the register {name} {read_values[i]}. {name}'s trimming value {self.best_codes[i]}")
 
-        # Confronto dei valori letti con quelli attesi
+        
         for i, (reg_value, best_code) in enumerate(zip(read_values, self.best_codes)):
             if reg_value != best_code:
                 print(f"Reg {names[i]} has different value")
                 return
+            
+        self.supplies_8.setVoltage(channel=2, voltage=14)
+        self.supplies_8.setCurrent(channel=2,current=0.5)
+        self.supplies_8.outp_ON(channel=2)
+        sleep(0.5)
+        self.supplies_8.setVoltage(channel=1, voltage=8)
+        self.supplies_8.setCurrent(channel=1,current=0.5)
+        self.supplies_8.outp_ON(channel=1)
+        sleep(0.5)
 
-        print("Values burnt correctly")
 
 
 if __name__ == '__main__':
