@@ -385,39 +385,24 @@ class Reference:
     def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
         try:
             data_to_save = {
-                "Row Name": [self.row_names],
-                "Best Codes": self.best_codes if hasattr(self, 'best_codes') else None,
-                "Closest Values": self.closest_values if hasattr(self, 'closest_values') else None,
+                "Row Name": self.row_names if hasattr(self, 'row_names') else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"],
+                "Best Codes": self.best_codes if hasattr(self, 'best_codes') else [None] * 5,
+                "Closest Values": self.closest_values if hasattr(self, 'closest_values') else [None] * 5,
             }
 
-            df = pd.DataFrame([data_to_save])
+            if data_to_save["Best Codes"] is not None:
+                data_to_save["Best Codes"] = [format(x, 'X') if x is not None else None for x in data_to_save["Best Codes"]]
+
+            df = pd.DataFrame(data_to_save)
 
             with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
                 df.to_excel(writer, sheet_name="Trimming", index=False)
 
-            wb = load_workbook(filename)
-            sheet = wb['Trimming']
-
-            sheet.cell(row=2, column=1, value='VBGR_ADJ_TRIM')  
-            sheet.cell(row=3, column=1, value='TSDN')           
-            sheet.cell(row=4, column=1, value='FRO_CLOCK')      
-            sheet.cell(row=5, column=1, value='BST_OCP_TRIM_reg1') 
-            sheet.cell(row=6, column=1, value='BST_OCP_TRIM_reg2')   
-
-            if hasattr(self, 'best_codes'):
-                best_codes_hex = [format(x, 'X') for x in self.best_codes]  
-                for i, code in enumerate(best_codes_hex):
-                    sheet.cell(row=i + 2, column=2, value=code)  
-
-            if hasattr(self, 'closest_values'):
-                for i, value in enumerate(self.closest_values):
-                    sheet.cell(row=i + 2, column=3, value=value)  
-
-            wb.save(filename)
-
-            print(f"File saved {filename}.")
+            print(f"File saved successfully as {filename}.")
+        
         except Exception as e:
             print(f"Error during saving: {e}")
+
     
     def write_trimming_bit(self):
         
@@ -434,7 +419,6 @@ class Reference:
         for i, name in enumerate(names):
             print(f"value read from the register {name} {read_values[i]}. {name}'s trimming value {self.best_codes[i]}")
 
-        
         for i, (reg_value, best_code) in enumerate(zip(read_values, self.best_codes)):
             if reg_value != best_code:
                 print(f"Reg {names[i]} has different value")
@@ -445,11 +429,52 @@ class Reference:
         self.supplies_8.outp_ON(channel=2)
         sleep(0.5)
         self.supplies_8.setVoltage(channel=1, voltage=8)
-        self.supplies_8.setCurrent(channel=1,current=0.5)
+        self.supplies_8.setCurrent(channel=1,current=0.5) 
         self.supplies_8.outp_ON(channel=1)
         sleep(0.5)
 
+        burn_registers = [
+        [0xFE,0x01],
+        [0x0F,0x80],
+        [0xFE,0x00],
+        [0xB4,0x00], # BOOST TRISTATE
+        [0xFE,0x01],
+        # [0xC8,0x03], # cHIP ID 
+        # [0xB1,0x1F],
+        [0xAF,0x00], # BLOCK BURN 
+        # [0xAF,0x98], # single ID byte burn 
+        # [0xAF,0x83], # single ID byte burn 
+        [0xAE,0x02],
+        [0xAE,0x00],
+        ]
 
+        for instruction in burn_registers:
+            self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
+            sleep(0.3)
+        
+        final_instructions = [
+            [0xFE, 0x00],
+            [0x00, 0x00],
+            [0x00, 0x01],
+            [0xFE, 0x01]
+        ]
+
+        for instruction in final_instructions:
+            self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
+
+        new_read_values = [self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg], Nobytes=1)[0] for reg in registers]
+        
+        for i, name in enumerate(names):
+            if new_read_values[i] == read_values[i]:
+                print(f"Value burned for register {name}")
+            else:
+                print(f"Value not burned for register {name}")
+        
+        self.supplies_8.setVoltage(channel=1, voltage=3.6)
+        self.supplies_8.setCurrent(channel=1,current=0.2) 
+        sleep(0.5)
+        self.supplies_8.setVoltage(channel=2, voltage=5)
+        self.supplies_8.setCurrent(channel=2,current=0.2)
 
 if __name__ == '__main__':
     ref = Reference()
@@ -459,8 +484,6 @@ if __name__ == '__main__':
     print(tests)
     best_codes = []
     closest_values = []
-
-
     try:
         for test in tests.Trim:
             for i in range (0x20,0x27):
