@@ -382,7 +382,7 @@ class Reference:
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
 
-    def save_to_excel(self, filename="output.xlsx"):
+    def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
         try:
             data_to_save = {
                 "Row Name": [self.row_names],
@@ -420,11 +420,6 @@ class Reference:
             print(f"Error during saving: {e}")
     
     def write_trimming_bit(self):
-        print(self.best_codes[0])
-        print(self.best_codes[1])
-        print(self.best_codes[2])
-        print(self.best_codes[3])
-        print(self.best_codes[4])
         self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0X01])
         self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB0, self.best_codes[0]])
         self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB3, self.best_codes[1]])
@@ -433,51 +428,22 @@ class Reference:
         self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB2, self.best_codes[4]])
 
     def burn_procedure(self):
-        # self.supplies_8.setVoltage(channel=2,voltage=14)
-        # self.supplies_8.setCurrent(channel=2, current=0.5)
-        # self.supplies.outp_ON(channel=2)
-        # sleep(0.5)
-        # self.supplies_8.setVoltage(channel=1,voltage=8)
-        # self.supplies_8.setCurrent(channel=1, current=0.5)
-        # self.supplies.outp_ON(channel=1)
-        # sleep(0.5)
-        reg_b0 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xB0], Nobytes=1)
-        reg_b3 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xB3], Nobytes=1)
-        reg_ef = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xEF], Nobytes=1)
-        reg_b1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xB1], Nobytes=1)
-        reg_b2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xB2], Nobytes=1)
-        print(f"value read from the reigister B0 {reg_b0}. B0's trimming value {self.best_codes[0]}")
-        print(f"value read from the reigister B3 {reg_b3}. B3's trimming value {self.best_codes[1]}")
-        print(f"value read from the reigister EF {reg_ef}. EF's trimming value {self.best_codes[2]}")
-        print(f"value read from the reigister B1 {reg_b1}. B1's trimming value {self.best_codes[3]}")
-        print(f"value read from the reigister B2 {reg_b2}. B2's trimming value {self.best_codes[4]}")
-        if reg_b0 == self.best_codes[0]:
-            print("Reg B0 have the same value")
-            if reg_b3 == self.best_codes[1]:
-                print("Reg B3 have the same value")
-                if reg_ef == self.best_codes[2]:
-                    print("Reg EF have the same value")
-                    if reg_b1 == self.best_codes[3]:
-                        print("Reg B1 have the same value")
-                        if reg_b2 == self.best_codes[4]:
-                            print("Reg B2 have the same value")
-                        else:
-                            print("Reg B2 have different value")
-                    else:
-                        print("Reg B1 have different value")
-                else:
-                    print("Reg EF have different value")
-            else:
-                print("Reg B1 have different value")
-        else:
-            print("Reg B0 have different value")
+        registers = [0xB0, 0xB3, 0xEF, 0xB1, 0xB2]
+        names = ["B0", "B3", "EF", "B1", "B2"]
 
+        # Lettura e stampa dei valori
+        read_values = [self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg], Nobytes=1)[0] for reg in registers]
+        for i, name in enumerate(names):
+            print(f"value read from the register {name} {read_values[i]}. {name}'s trimming value {self.best_codes[i]}")
 
+        # Confronto dei valori letti con quelli attesi
+        for i, (reg_value, best_code) in enumerate(zip(read_values, self.best_codes)):
+            if reg_value != best_code:
+                print(f"Reg {names[i]} has different value")
+                return
 
-        return print("Values burnt correctly")
-    
+        print("Values burnt correctly")
 
-    
 
 if __name__ == '__main__':
     ref = Reference()
@@ -488,6 +454,7 @@ if __name__ == '__main__':
     best_codes = []
     closest_values = []
 
+
     try:
         for test in tests.Trim:
             for i in range (0x20,0x27):
@@ -495,7 +462,7 @@ if __name__ == '__main__':
                 ref.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             ref.ref_DFT(ref_data, test)
-        ref.save_to_excel("output.xlsx")
+        ref.save_to_excel("DFT_6311_Result.xlsx")
         ref.write_trimming_bit()
         ref.burn_procedure()
 
