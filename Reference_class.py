@@ -396,7 +396,7 @@ class Reference:
                 df.to_excel(writer, sheet_name="Trimming", index=False)
 
             wb = load_workbook(filename)
-            sheet = wb['Results']
+            sheet = wb['Trimming']
 
             sheet.cell(row=2, column=1, value='VBGR_ADJ_TRIM')  
             sheet.cell(row=3, column=1, value='TSDN')           
@@ -418,7 +418,55 @@ class Reference:
             print(f"File saved {filename}.")
         except Exception as e:
             print(f"Error during saving: {e}")
+    
+    def write_trimming_bit(self):
+        print(self.best_codes[0])
+        print(self.best_codes[1])
+        print(self.best_codes[2])
+        print(self.best_codes[3])
+        print(self.best_codes[4])
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0X01])
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB0, self.best_codes[0]])
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB3, self.best_codes[1]])
 
+    def burn_procedure(self):
+        # self.supplies_8.setVoltage(channel=2,voltage=14)
+        # self.supplies_8.setCurrent(channel=2, current=0.5)
+        # self.supplies.outp_ON(channel=2)
+        # sleep(0.5)
+        # self.supplies_8.setVoltage(channel=1,voltage=8)
+        # self.supplies_8.setCurrent(channel=1, current=0.5)
+        # self.supplies.outp_ON(channel=1)
+        # sleep(0.5)
+        reg_b1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xB0], Nobytes=1)
+        reg_b2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[0xB3], Nobytes=1)
+        print(f"value read from the reigister B1 {reg_b1[0]}. B1's trimming value {self.best_codes[0]}")
+        print(f"value read from the reigister B3 {reg_b2[0]}. B3's trimming value {self.best_codes[1]}")
+        # reg_b3 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=0xB3, Nobytes=1)
+        # reg_b4 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=0xB4, Nobytes=1)
+        if reg_b1[0] == self.best_codes[0]:
+            print("Reg B0 have the same value")
+            if reg_b2[0] == self.best_codes[1]:
+                print("Reg B1 have the same value")
+                # if reg_b3 == self.best_codes[2]:
+                #     print("Reg B2 have the same value")
+                #     if reg_b4[3] == self.best_codes[3]:
+                #         print("Reg B3 have the same value")
+                #     else:
+                #         print("Reg B3 have different value")
+                # else:
+                #     print("Reg B2 have different value")
+            else:
+                print("Reg B1 have different value")
+        else:
+            print("Reg B0 have different value")
+
+
+
+        return print("Values burnt correctly")
+    
+
+    
 
 if __name__ == '__main__':
     ref = Reference()
@@ -437,6 +485,8 @@ if __name__ == '__main__':
             print(f'............ {test}')
             ref.ref_DFT(ref_data, test)
         ref.save_to_excel("output.xlsx")
+        ref.write_trimming_bit()
+        ref.burn_procedure()
 
     except  TypeError as e:
         print(f'ZIO Entered in Exception loop :> {e}')
