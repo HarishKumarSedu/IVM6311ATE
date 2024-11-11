@@ -193,7 +193,7 @@ class Trim:
                         print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, Valore multimetro: {valore_multimetro}")
 
                        
-                        if 0.45 <= valore_multimetro <= 0.85:
+                        if 0.45 <= valore_multimetro <= 0.90:
                             # print(valore_multimetro, new_register_val1, new_register_val2)
                             return valore_multimetro, new_register_val1, new_register_val2
 
