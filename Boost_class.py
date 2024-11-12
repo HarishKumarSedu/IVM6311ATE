@@ -328,10 +328,12 @@ class Boost:
                     sleep(0.5)
                 if re.search('outp', signal_name):
                     self.ps_outpn.setVoltage(channel=2, voltage=signal_force)
+                    self.ps_outpn.setCurrent(channel=2, current=0.2)
                     sleep(0.1)
                     self.ps_outpn.outp_ON(channel=2)
                 if re.search('outn', signal_name):
                     self.ps_outpn.setVoltage(channel=1, voltage=signal_force)
+                    self.ps_outpn.setCurrent(channel=1, current=0.2)
                     sleep(0.1)
                     self.ps_outpn.outp_ON(channel=1)
 
