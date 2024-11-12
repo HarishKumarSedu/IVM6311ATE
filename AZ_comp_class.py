@@ -253,44 +253,44 @@ class AZ_comp:
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
 
-def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
-    try:
-        # Imposta i valori predefiniti per `row_names` e `measure_values`
-        row_names = self.row_names if hasattr(self, 'row_names') and self.row_names else [
-            "3rd_STG_Current", "2nd_STG_Current", "1st_STG_Current", "Ground_AZCOMP", 
-            "OUTN_EXT_PRT", "OUTP_EXT_PRT", "VCM_AVDD"
-        ]
-        measure_values = self.measure_values if hasattr(self, 'measure_values') else [None] * len(row_names)
-
-        # Rendi entrambe le liste della stessa lunghezza
-        max_length = max(len(row_names), len(measure_values))
-        row_names.extend([None] * (max_length - len(row_names)))
-        measure_values.extend([None] * (max_length - len(measure_values)))
-
-        # Crea il dizionario con i dati della stessa lunghezza
-        data_to_save = {
-            "Row Name": row_names,
-            "Measure Values": measure_values,
-        }
-
-        # Crea il DataFrame
-        df = pd.DataFrame(data_to_save)
-        print("Dati che verranno salvati:\n", df)  # Debugging: verifica il contenuto
-
-        # Scrittura in Excel in modalità append
-        with pd.ExcelWriter(filename, engine="openpyxl", mode="a") as writer:
-            # Controlla se il foglio esiste già
-            if "AZ_comp" in writer.book.sheetnames:
-                print("Il foglio 'AZ_comp' esiste già e sarà aggiornato.")
-                del writer.book["AZ_comp"]  # Rimuove il foglio esistente
-                writer.book.create_sheet("AZ_comp")  # Crea un nuovo foglio con lo stesso nome
+    def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
+        try:
             
-            df.to_excel(writer, sheet_name="AZ_comp", index=False)
+            row_names = self.row_names if hasattr(self, 'row_names') and self.row_names else [
+                "3rd_STG_Current", "2nd_STG_Current", "1st_STG_Current", "Ground_AZCOMP", 
+                "OUTN_EXT_PRT", "OUTP_EXT_PRT", "VCM_AVDD"
+            ]
+            measure_values = self.measure_values if hasattr(self, 'measure_values') else [None] * len(row_names)
 
-        print(f"File salvato correttamente come {filename}.")
-    
-    except Exception as e:
-        print(f"Errore durante il salvataggio: {e}")
+           
+            max_length = max(len(row_names), len(measure_values))
+            row_names.extend([None] * (max_length - len(row_names)))
+            measure_values.extend([None] * (max_length - len(measure_values)))
+
+            
+            data_to_save = {
+                "Row Name": row_names,
+                "Measure Values": measure_values,
+            }
+
+            
+            df = pd.DataFrame(data_to_save)
+            # print("Dati che verranno salvati:\n", df)  
+
+           
+            with pd.ExcelWriter(filename, engine="openpyxl", mode="a") as writer:
+                
+                if "AZ_comp" in writer.book.sheetnames:
+                    # print("Il foglio 'AZ_comp' esiste già e sarà aggiornato.")
+                    del writer.book["AZ_comp"]  
+                    writer.book.create_sheet("AZ_comp") 
+                
+                df.to_excel(writer, sheet_name="AZ_comp", index=False)
+
+            print(f"File saved{filename}.")
+        
+        except Exception as e:
+            print(f"Error during saving: {e}")
 
 if __name__ == '__main__':
     az_comp = AZ_comp()

@@ -116,7 +116,8 @@ class Boost:
             if re.match('Force__SDWN__1.8V'.lower(), instruction):
                 print('Force 1.8V on SDWN')
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
-                self.pa.outp_ON(channel=4)
+                sleep(0.5)
+                self.pa.setCurrent(channel=4, current= 0.2)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
                 sleep(0.5)
@@ -166,7 +167,7 @@ class Boost:
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
                 # self.pa.setVoltage(channel=4,voltage=0)
-                sleep(0.1)
+                sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
 
@@ -399,7 +400,7 @@ class Boost:
                 if re.findall('startup', instruction):
                     print('Startup Procedure')
                     self.execute_startup()
-                if re.findall('Enable_Ana_Testpoint_boost'.lower(), instruction):
+                if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
                     print('Enable Ana TestPoint Procedure boost')
                     self.execute_Enable_Ana_Testpoint()
                 if re.findall('Boost_test_default'.lower(), instruction):
@@ -472,7 +473,7 @@ if __name__ == '__main__':
     boost = Boost()
     boost.power_on
     boost_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Boost')
-    tests = boost.read_yaml(path_to_yaml=Path('Tests.yaml'))
+    tests = boost.read_yaml(path_to_yaml=Path('Boost.yaml'))
     print(tests)
     try:
         for test in tests.Boost:
