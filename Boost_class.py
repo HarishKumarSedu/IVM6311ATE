@@ -311,6 +311,7 @@ class Boost:
                     self.supplies_8.outp_ON(channel=1)
                 if re.search('vbias',signal_name):
                     self.supplies_8.setVoltage(channel=2, voltage=signal_force)
+                    self.supplies_8.setCurrent(channel=2, current=0.2)
                     sleep(0.1)
                     self.supplies_8.outp_ON(channel=2)
                 if re.search('sw', signal_name):

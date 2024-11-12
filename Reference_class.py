@@ -181,7 +181,7 @@ class Reference:
                 sleep(0.5)
     
     def execute_Boost_test_default(self):
-        startup_procedure = self.procedures['Boost_Test_Default'].loc[0].split('\n')
+        startup_procedure = self.procedures['Test_Boost'].loc[0].split('\n')
         for instruction in startup_procedure:
             instruction = instruction.lower()
             if re.match('0x', instruction):
@@ -311,7 +311,7 @@ class Reference:
                 if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
                     print('Enable Ana TestPoint Procedure')
                     self.execute_Enable_Ana_Testpoint()
-                if re.findall('Boost_test_default'.lower(), instruction):
+                if re.findall('Test_Boost'.lower(), instruction):
                     print('Enable Boost Test Default Procedure')
                     self.execute_Boost_test_default()
 
