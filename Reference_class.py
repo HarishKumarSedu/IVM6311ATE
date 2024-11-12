@@ -385,24 +385,40 @@ class Reference:
 
     def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
         try:
+            # Usa un valore di default per `row_names` se non esiste o è vuoto
+            row_names = self.row_names if hasattr(self, 'row_names') and self.row_names else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"]
+            
+            # Imposta i valori predefiniti per `best_codes` e `closest_values`
+            best_codes = self.best_codes if hasattr(self, 'best_codes') else [None] * len(row_names)
+            closest_values = self.closest_values if hasattr(self, 'closest_values') else [None] * len(row_names)
+
+            # Rendi tutte le liste della stessa lunghezza
+            max_length = max(len(row_names), len(best_codes), len(closest_values))
+            row_names.extend([None] * (max_length - len(row_names)))
+            best_codes.extend([None] * (max_length - len(best_codes)))
+            closest_values.extend([None] * (max_length - len(closest_values)))
+
+            # Converti `best_codes` in formato esadecimale se non sono None
+            best_codes = [format(x, 'X') if x is not None else None for x in best_codes]
+
+            # Crea il dizionario con dati della stessa lunghezza
             data_to_save = {
-                "Row Name": self.row_names if hasattr(self, 'row_names') else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"],
-                "Best Codes": self.best_codes if hasattr(self, 'best_codes') else [None] * 5,
-                "Closest Values": self.closest_values if hasattr(self, 'closest_values') else [None] * 5,
+                "Row Name": row_names,
+                "Best Codes": best_codes,
+                "Closest Values": closest_values,
             }
 
-            if data_to_save["Best Codes"] is not None:
-                data_to_save["Best Codes"] = [format(x, 'X') if x is not None else None for x in data_to_save["Best Codes"]]
-
+            # Crea il DataFrame e salva in Excel
             df = pd.DataFrame(data_to_save)
+            print("Dati che verranno salvati:\n", df)  # Debugging: verifica il contenuto
 
             with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
                 df.to_excel(writer, sheet_name="Trimming", index=False)
 
-            print(f"File saved successfully as {filename}.")
+            print(f"File salvato correttamente come {filename}.")
         
         except Exception as e:
-            print(f"Error during saving: {e}")
+            print(f"Errore durante il salvataggio: {e}")
 
     
     def write_trimming_bit(self):
