@@ -450,6 +450,9 @@ class Reference:
         self.supplies_8.outp_ON(channel=1)
         sleep(0.5)
 
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0x00])
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0x00, 0x01])
+
         burn_registers = [
         [0xFE,0x01],
         [0x0F,0x80],
