@@ -329,6 +329,7 @@ class Boost:
                         self.current_priority_set = True
                     # self.pa.setCurrent_Priority(channel=1)
                     self.pa.setCurrent(channel=1,current=signal_force)
+                    self.pa.set_Limit_Voltage(channel=1, voltage=4.5)
                     self.pa.outp_ON(channel=1)
                     sleep(0.5)
                 if re.search('vbso',signal_name):
@@ -337,8 +338,12 @@ class Boost:
                     self.mcp2317.Switch(device_addr=0x23, row=7, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)
+                    if not self.current_priority_set:
+                        self.pa.setCurrent_Priority(channel=1)
+                        self.current_priority_set = True
                     self.pa.setCurrent_Priority(channel=1)
                     self.pa.setCurrent(channel=1,current=signal_force)
+                    self.pa.set_Limit_Voltage(channel=1, voltage=4)
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
                     
@@ -385,7 +390,7 @@ class Boost:
     def waiting_function(self,waiting_instruction:{}):
         if waiting_instruction:
             waiting_time = waiting_instruction.get('Delay')
-            print(waiting_time)
+            # print(waiting_time)
             sleep(float(waiting_time))
 
     def boost_DFT(self,data=pd.DataFrame({}), test_name=''):
