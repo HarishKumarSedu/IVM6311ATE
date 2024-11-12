@@ -377,7 +377,7 @@ class Boost:
                 ron_ls = ((TSwitch_SW - TSwitch_GND)/ (400e-3) )
                 print("RON_LS value: " , ron_ls)
             if re.search('ronhs', signal_name):
-                TSwitch_SW2 = self.sdwn_measurements[2]
+                TSwitch_SW2 = self.sdwn_measurements[0]
                 print(TSwitch_SW2)
                 TSwitch_vbso = self.vbso_measurements[0]
                 print(TSwitch_vbso)
@@ -385,7 +385,7 @@ class Boost:
                 print("RON_HS value: " , ron_hs)
             if re.search('ronbyp', signal_name):
                 vbat = self.vbat_measurements[0]
-                vbso_byp = self.vbso_measurements[1]
+                vbso_byp = self.vbso_measurements[0]
                 print(vbso_byp)
                 ron_byp = ((vbat - vbso_byp)/ (100e-3) )
                 print("RON_BYP value: " , ron_byp)
