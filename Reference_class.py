@@ -386,7 +386,7 @@ class Reference:
     def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
         try:
             # Usa un valore di default per `row_names` se non esiste o è vuoto
-            row_names = self.row_names if hasattr(self, 'row_names') and self.row_names else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"]
+            row_names = self.row_names if hasattr(self, 'Trimming') and self.row_names else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"]
             
             # Imposta i valori predefiniti per `best_codes` e `closest_values`
             best_codes = self.best_codes if hasattr(self, 'best_codes') else [None] * len(row_names)
@@ -403,14 +403,14 @@ class Reference:
 
             # Crea il dizionario con dati della stessa lunghezza
             data_to_save = {
-                "Row Name": row_names,
+                "Trimming": row_names,
                 "Best Codes": best_codes,
                 "Closest Values": closest_values,
             }
 
             # Crea il DataFrame e salva in Excel
             df = pd.DataFrame(data_to_save)
-            print("Dati che verranno salvati:\n", df)  # Debugging: verifica il contenuto
+            # print("Dati che verranno salvati:\n", df)  # Debugging: verifica il contenuto
 
             with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
                 df.to_excel(writer, sheet_name="Trimming", index=False)

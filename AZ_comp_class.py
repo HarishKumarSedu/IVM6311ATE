@@ -253,39 +253,44 @@ class AZ_comp:
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
 
-    def save_to_excel(self, filename="output.xlsx"):
-        try:
-            data_to_save = {
-                "Row Name": [self.row_names],
-                "measure_values": self.measure_values if hasattr(self, 'measure_values') else None,
-            }
+def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
+    try:
+        # Imposta i valori predefiniti per `row_names` e `measure_values`
+        row_names = self.row_names if hasattr(self, 'row_names') and self.row_names else [
+            "3rd_STG_Current", "2nd_STG_Current", "1st_STG_Current", "Ground_AZCOMP", 
+            "OUTN_EXT_PRT", "OUTP_EXT_PRT", "VCM_AVDD"
+        ]
+        measure_values = self.measure_values if hasattr(self, 'measure_values') else [None] * len(row_names)
 
-            df = pd.DataFrame([data_to_save])
+        # Rendi entrambe le liste della stessa lunghezza
+        max_length = max(len(row_names), len(measure_values))
+        row_names.extend([None] * (max_length - len(row_names)))
+        measure_values.extend([None] * (max_length - len(measure_values)))
 
-            with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
-                df.to_excel(writer, sheet_name="AZ_comp", index=False)
+        # Crea il dizionario con i dati della stessa lunghezza
+        data_to_save = {
+            "Row Name": row_names,
+            "Measure Values": measure_values,
+        }
 
-            wb = load_workbook(filename)
-            sheet = wb['AZ_comp']
+        # Crea il DataFrame
+        df = pd.DataFrame(data_to_save)
+        print("Dati che verranno salvati:\n", df)  # Debugging: verifica il contenuto
 
-            sheet.cell(row=2, column=1, value='3rd_STG_Current')  
-            sheet.cell(row=3, column=1, value='2nd_STG_Current')           
-            sheet.cell(row=4, column=1, value='1st_STG_Current')      
-            sheet.cell(row=5, column=1, value='Ground_AZCOMP') 
-            sheet.cell(row=6, column=1, value='OUTN_EXT_PRT')   
-            sheet.cell(row=7, column=1, value='OUTP_EXT_PRT') 
-            sheet.cell(row=8, column=1, value='VCM_AVDD')   
+        # Scrittura in Excel in modalità append
+        with pd.ExcelWriter(filename, engine="openpyxl", mode="a") as writer:
+            # Controlla se il foglio esiste già
+            if "AZ_comp" in writer.book.sheetnames:
+                print("Il foglio 'AZ_comp' esiste già e sarà aggiornato.")
+                del writer.book["AZ_comp"]  # Rimuove il foglio esistente
+                writer.book.create_sheet("AZ_comp")  # Crea un nuovo foglio con lo stesso nome
+            
+            df.to_excel(writer, sheet_name="AZ_comp", index=False)
 
-            if hasattr(self, 'measure_values'):
-                for i, value in enumerate(self.measure_values):
-                    sheet.cell(row=i + 2, column=2, value=value)  
-
-            wb.save(filename)
-
-            print(f"File saved {filename}.")
-        except Exception as e:
-            print(f"Error during saving: {e}")
-
+        print(f"File salvato correttamente come {filename}.")
+    
+    except Exception as e:
+        print(f"Errore durante il salvataggio: {e}")
 
 if __name__ == '__main__':
     az_comp = AZ_comp()
@@ -300,7 +305,7 @@ if __name__ == '__main__':
                 az_comp.mcp2317.Switch_reset(device_addr=i)
             print(f'............ {test}')
             az_comp.AZcomp_DFT(AZ_COMP_data, test)
-        az_comp.save_to_excel("output.xlsx")
+        az_comp.save_to_excel("DFT_6311_Result.xlsx")
     except  TypeError as e:
         print(f'CANE Entered in Exception loop :> {e}')
         traceback.print_exc()
