@@ -261,6 +261,7 @@ class Boost:
                     self.vfsyn_measurements.append(vfsyn)
                     print("FSYN voltage: " ,self.vfsyn_measurements[-1])
                 if re.search('sdi', signal_pin):
+                    self.scope.set_trigger__mode(mode='AUTO')
                     self.scope.set_HScale('200E-9')
                     self.scope.set_Channel__VScale(scale=0.5)
                     sleep(0.5)
@@ -320,6 +321,7 @@ class Boost:
                     self.pa.emulMode_2Q(channel=3)
                     self.pa.setVoltage_Priority(channel=3)
                     self.pa.setVoltage(channel=3,voltage=signal_force)
+                    self.pa.set_Limit_Current(channel=3, current=0.2)
                     sleep(0.2)
                     self.pa.outp_ON(channel=3)
                     sleep(0.5)
