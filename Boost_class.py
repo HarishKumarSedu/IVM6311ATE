@@ -157,16 +157,15 @@ class Boost:
 
 
     def execute_Enable_Ana_Testpoint(self):
-        startup_procedure = self.procedures['Enable_Ana_Testpoint_boost'].loc[0].split('\n')
+        startup_procedure = self.procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
         for instruction in startup_procedure:
             instruction = instruction.lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
-                print(reg_data)
                 self.write_device(reg_data)
             if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
+                print('Force SDWN OPEN')
                 self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
-                # self.pa.setVoltage(channel=4,voltage=0)
                 sleep(0.5)
                 self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
                 sleep(0.5)
@@ -188,6 +187,7 @@ class Boost:
                 self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
                 sleep(0.2)
                 self.supplies_8.setVoltage(channel=1,voltage=3.6)
+                self.supplies_8.setCurrent(channel=1, current=0.2)
                 self.supplies_8.outp_ON(channel=1)
             if re.match('Force__SW__3.6V'.lower(), instruction):
                 print('Force__SW__3.6V')
@@ -275,6 +275,7 @@ class Boost:
                     self.pa.emulMode_2Q(channel=1)
                     self.pa.setVoltage_Priority(channel=1)
                     self.pa.setVoltage(channel=1, voltage=signal_force)
+                    self.pa.set_Limit_Current(channel=1, current=0.5)
                     self.pa.outp_ON(channel=1)
                     sleep(0.2)
                 if re.search('vbat',signal_name):
@@ -401,7 +402,7 @@ class Boost:
                     print('Startup Procedure')
                     self.execute_startup()
                 if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
-                    print('Enable Ana TestPoint Procedure boost')
+                    print('Enable Ana TestPoint Procedure')
                     self.execute_Enable_Ana_Testpoint()
                 if re.findall('Boost_test_default'.lower(), instruction):
                     print('Enable Boost Test Default Procedure')
