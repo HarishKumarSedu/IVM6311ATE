@@ -16,7 +16,7 @@ class Trim:
 
     def sweep_trim_bit_voltage(self, reg_trim, lsb, msb):
 
-        # self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, 0x70]) ####Set default vbg_curve
+        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, 0x70]) ####Set default vbg_curve
         # Read the value of the register (assuming mcpRead returns a list with one byte)
         reg_val = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_trim], Nobytes=1)[0]  # Take the first element of the list
 
@@ -163,6 +163,8 @@ class Trim:
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, reg_val1_zeroed])
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, reg_val2_zeroed])
 
+            print(self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0])
+            print(self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0])
             
             for increment2 in [0xD0, 0xF0]:
                 internal_bits2 = increment2 & mask2
@@ -195,7 +197,7 @@ class Trim:
                         print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, Valore multimetro: {valore_multimetro}")
 
                        
-                        if 0.45 <= valore_multimetro <= 0.90:
+                        if 0.45 <= valore_multimetro <= 0.95:
                             # print(valore_multimetro, new_register_val1, new_register_val2)
                             return valore_multimetro, new_register_val1, new_register_val2
 
