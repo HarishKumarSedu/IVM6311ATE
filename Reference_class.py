@@ -247,10 +247,23 @@ class Reference:
                     self.ps_gpib.setVoltage(channel=2, voltage=signal_force)
                     sleep(0.5)
                     self.ps_gpib.outp_ON(channel=2)
+                if re.search('vbso', signal_name):
+                    self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
+                    sleep(0.5)
+                    self.supplies_8.setVoltage(channel=1,voltage=signal_force)
+                    self.supplies_8.setCurrent(channel=1, current=0.2)
+                    self.supplies_8.outp_ON(channel=1)
+                
             
             if re.search('A', signal_Unit):
                 signal_force = force_signal_instruction.get('Value')
                 if re.search('sw',signal_name):
+                    defval_reg1 = 0x7F 
+                    defval_reg2 = 0xD0  
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0x01])
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, defval_reg1])
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB2, defval_reg2])
+                    sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
                     self.pa.emulMode_2Q(channel=1)

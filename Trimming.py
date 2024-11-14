@@ -135,14 +135,10 @@ class Trim:
 
     def sweep_trim_bit_freq_two_registers(self, reg1, lsb1, msb1, reg2, lsb2, msb2):
         try:
-            defval_reg1 = 0x7F
-            defval_reg2 = 0xD0
-            # print(reg1)
-            # print(lsb1)
-            # print(msb1)
-            # print(reg2)
-            # print(lsb2)
-            # print(msb2)
+            defval_reg1 = 0x7F  
+            defval_reg2 = 0xD0  
+
+            
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, defval_reg1])
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, defval_reg2])
 
@@ -150,69 +146,79 @@ class Trim:
             reg_val1 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0]
             reg_val2 = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg2], Nobytes=1)[0]
 
-            print(f"Registro 1 iniziale: {hex(reg_val1)}, Registro 2 iniziale: {hex(reg_val2)}")
+            print(f"Reg1: {hex(reg_val1)}, Reg2: {hex(reg_val2)}")
 
-            mask1 = ((1 << (msb1 - lsb1 + 1)) - 1) << lsb1
-            mask2 = ((1 << (msb2 - lsb2 + 1)) - 1) << lsb2
+           
+            mask1_msb = 0xF0  
+            mask1_lsb = 0x0F  
+            # mask2_bit6 = 0xD0 
 
-            external_bits1 = reg_val1 & ~mask1
-            external_bits2 = reg_val2 & ~mask2
-            reg_val1_zeroed = reg_val1 & ~mask1
-            reg_val2_zeroed = reg_val2 & ~mask2
+            
+            msb_bits1 = reg_val1 & mask1_msb  
+            lsb_bits1 = reg_val1 & mask1_lsb  
 
-            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, reg_val1_zeroed])
-            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, reg_val2_zeroed])
+            
+            # bit6_reg2 = reg_val2 & mask2_bit6 
 
-            print(self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0])
-            print(self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0])
+            
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, msb_bits1 | lsb_bits1])  
+            # self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, bit6_reg2])  
+
+            print({hex(self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg1], Nobytes=1)[0])})
+            print({hex(self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg2], Nobytes=1)[0])})
+
             
             for increment2 in [0xD0, 0xF0]:
-                internal_bits2 = increment2 & mask2
-                new_register_val2 = external_bits2 | internal_bits2
-                self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, new_register_val2])
+                # internal_bits2 = increment2 & mask2_bit6  
+                # new_register_val2 = msb_bits1 | internal_bits2  
+
+                self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg2, increment2])
 
                 
                 if increment2 == 0xD0:
-                    increment1 = 0x7F
-                    increment_step = -1
-                    end_value = 0x70
+                    increment1 = 0x7F  
+                    increment_step = -1  
+                    end_value = 0x70  
                 else:
-                    increment1 = 0x7F
-                    increment_step = -1
-                    end_value = 0x70
+                    increment1 = 0x70 
+                    increment_step = 1 
+                    end_value = 0x7F  
 
                 while (increment_step == -1 and increment1 >= end_value) or (increment_step == 1 and increment1 <= end_value):
-                    internal_bits1 = (increment1 << lsb1) & mask1
-                    new_register_val1 = external_bits1 | internal_bits1
+                    
+                    internal_bits1 = (increment1 << lsb1) & mask1_lsb 
+                    new_register_val1 = msb_bits1 | internal_bits1 
+
                     self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg1, new_register_val1])
 
-                    sleep(0.5)  
+                    sleep(0.5)
                     self.mcp2317.Switch(device_addr=0x24, row=2, col=1, Enable=True)
                     sleep(0.5)
 
                     try:
                         valore_multimetro = self.meter.meas_V()
-                        
-                        
-                        print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, Valore multimetro: {valore_multimetro}")
+                        print(f"Increment1: {hex(increment1)}, Increment2: {hex(increment2)}, DMM: {valore_multimetro}")
 
                        
-                        if 0.45 <= valore_multimetro <= 0.95:
-                            # print(valore_multimetro, new_register_val1, new_register_val2)
-                            return valore_multimetro, new_register_val1, new_register_val2
+                        if valore_multimetro >= 0.60:
+                           
+                            return valore_multimetro, new_register_val1, increment2
 
                     except Exception as e:
                         print(f"Measurement error: {e}")
-                        continue  
+                        continue
 
+                   
                     increment1 += increment_step
 
-            print("Impossible find right value")
-            return 0.0, defval_reg1, defval_reg2  
+            print("right value no found")
+            return 0.0, defval_reg1, defval_reg2
 
         except Exception as e:
-            print(f"Error during the execution: {e}")
-            return 0.0, 0, 0  # Valori di default in caso di errore
+            print(f"error during execution {e}")
+            return 0.0, 0, 0
+
+
 
 
 # if __name__ == '__main__':
