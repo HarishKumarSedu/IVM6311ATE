@@ -751,36 +751,43 @@ class Parser:
     
     def extract_forceramp_instruction(self, instruction: str):
         signal_info = {}
-            
-        # Dividi la stringa su spazi e seleziona la prima parte
-        main_part = instruction.split('"')[0].strip()  # Ottiene solo "Ramp__VBSO__4.5V__1V"
-        
-        # Dividi ulteriormente usando le doppie sottolineature per estrarre i valori
+
+        # Dividi la stringa usando le doppie sottolineature
+        main_part = instruction.split('"')[0].strip()
         parts = re.split(r'__', main_part)
-        
+
         if len(parts) == 4:
-            # Estrai i tre elementi richiesti
-            signal_type = parts[1]  # "VBSO"
-            
-            # Usa regex per separare i valori numerici e l'unità 'V' o 'v'
-            match_start = re.search(r'(\d+(\.\d+)?)([Vv])$', parts[2])
-            match_end = re.search(r'(\d+(\.\d+)?)([Vv])$', parts[3])
-            
+            signal_type = parts[1]  # "SW", "VBSO", ecc.
+
+            # Usa regex per estrarre valori numerici con unità (tra cui V, A, Hz, ecc.)
+            unit_pattern = r'(n|u|m|k|M|G)?(V|A|Hz)'  # Permette prefissi SI e unità specifiche
+            match_start = re.search(rf'(-?\d+(\.\d+)?){unit_pattern}$', parts[2])
+            match_end = re.search(rf'(-?\d+(\.\d+)?){unit_pattern}$', parts[3])
+
             if match_start and match_end:
-                start_voltage = float(match_start.group(1))  # Converte in float
-                end_voltage = float(match_end.group(1))      # Converte in float
-                unit = match_start.group(3).upper()          # Unità di misura sempre in maiuscolo "V"
-                
-                # Costruisci il dizionario con le informazioni estratte
-                signal_info = {
-                    'Signal Type': signal_type,
-                    'Start Voltage': start_voltage,
-                    'End Voltage': end_voltage,
-                    'Unit': unit
-                }
+                start_value = float(match_start.group(1))  # Converte il valore numerico in float
+                end_value = float(match_end.group(1))      # Converte il valore numerico in float
+                unit_prefix_start = match_start.group(3) or ''  # Prefisso SI iniziale (es. 'm', 'u')
+                unit_start = match_start.group(4)  # Unità finale (es. 'V', 'A')
+                unit_prefix_end = match_end.group(3) or ''
+                unit_end = match_end.group(4)
+
+                # Verifica che le unità siano consistenti
+                if (unit_prefix_start + unit_start) == (unit_prefix_end + unit_end):
+                    full_unit = (unit_prefix_start + unit_start).upper()  # Unità finale in maiuscolo
+                    signal_info = {
+                        'Signal Type': signal_type,
+                        'Start Value': start_value,
+                        'End Value': end_value,
+                        'Unit': full_unit
+                    }
+                else:
+                    print("Errore: Le unità di misura di inizio e fine non corrispondono.")
             else:
-                print("Errore: Il formato dei valori di tensione non è valido.")
-                
+                print("Errore: Il formato dei valori numerici non è valido.")
+        else:
+            print("Errore: Il formato dell'istruzione non è valido.")
+        
         return signal_info
             
     def value_clean(self,value:str):
@@ -799,6 +806,5 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_TrimSweep_Instruction('Trim__ 0xB3[7:5] "Select code which sets ATEST voltage as close as possible to target"'))
+    print(parser.extract_forceramp_instruction('Ramp__SW__100mA__-100mA'))
     # print(parser.value_clean('2ma'))
-    
