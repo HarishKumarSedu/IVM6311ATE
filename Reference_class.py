@@ -358,7 +358,18 @@ class Reference:
             if re.match('calculate', instruction):
                 self.closest_value,self.best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
                 self.best_codes.append(self.best_code)
+                print(self.best_codes)
                 self.closest_values.append(self.closest_value)
+                if len(self.best_codes) == 1:
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB0, self.best_codes[0]])
+                elif len(self.best_codes) == 2:
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB3, self.best_codes[1]])
+                elif len(self.best_codes) == 3:
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xEF, self.best_codes[2]])  
+                elif len(self.best_codes) == 4:
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB1, self.best_codes[3]])  
+                elif len(self.best_codes) == 5:
+                    self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xB2, self.best_codes[4]])
                 # print(best_codes)
                 # print(closest_values)
             if re.match('wait', instruction):

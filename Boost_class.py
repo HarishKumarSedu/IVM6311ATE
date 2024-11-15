@@ -433,6 +433,9 @@ class Boost:
                     sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
+                    self.scope.single_Trigger__ON()
+                    self.scope.single__Trigger__Mode()
+                    self.scope.set_trigger__mode('NORM')
                     self.pa.emulMode_2Q(channel=1)
                     if not self.current_priority_set:
                         self.pa.setCurrent_Priority(channel=1)
@@ -442,7 +445,9 @@ class Boost:
                     self.pa.set_Limit_Voltage(channel=1, voltage=4.3)
                     sleep(0.5)
                     self.pa.outp_ON(channel=1)
+                    self.pa.setCurrRange(channel=1)
                     current_sw = self.pa.getCurrent(channel=1)
+                    print(current_sw)
                     while current_sw < 100e-3:
                         trig = self.scope.trigger_detect()
                         if trig == False:
@@ -451,8 +456,9 @@ class Boost:
                             sleep(0.5)
                             print(current_sw)
                             break
-                        current_sw = current_sw - 0.05
+                        current_sw = current_sw - 0.01
                         self.pa.setCurrent(channel=1, current = current_sw)
+                        sleep(0.5)
 
 
     def waiting_function(self,waiting_instruction:{}):
