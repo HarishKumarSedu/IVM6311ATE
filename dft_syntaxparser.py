@@ -749,6 +749,7 @@ class Parser:
                 print("Errore: Il valore del delay non è valido.")
         return delay_info
     
+
     def extract_forceramp_instruction(self, instruction: str):
         signal_info = {}
 
@@ -756,25 +757,32 @@ class Parser:
         main_part = instruction.split('"')[0].strip()
         parts = re.split(r'__', main_part)
 
+        print("Parts:", parts)  # Debug: verifica le parti estratte
+
         if len(parts) == 4:
             signal_type = parts[1]  # "SW", "VBSO", ecc.
 
-            # Usa regex per estrarre valori numerici con unità (tra cui V, A, Hz, ecc.)
-            unit_pattern = r'(n|u|m|k|M|G)?(V|A|Hz)'  # Permette prefissi SI e unità specifiche
-            match_start = re.search(rf'(-?\d+(\.\d+)?){unit_pattern}$', parts[2])
-            match_end = re.search(rf'(-?\d+(\.\d+)?){unit_pattern}$', parts[3])
+            # Usa regex per estrarre valori numerici con unità
+            unit_pattern = r'([numkMG]?)([VAHz]{1,2})'  # Prefissi SI e unità valide
+            match_start = re.search(rf'(-?\d+(\.\d+)?){unit_pattern}$', parts[2], re.IGNORECASE)
+            match_end = re.search(rf'(-?\d+(\.\d+)?){unit_pattern}$', parts[3], re.IGNORECASE)
+
+            # print("Match start:", match_start)  # Debug: verifica il primo match
+            # print("Match end:", match_end)      # Debug: verifica il secondo match
 
             if match_start and match_end:
-                start_value = float(match_start.group(1))  # Converte il valore numerico in float
-                end_value = float(match_end.group(1))      # Converte il valore numerico in float
+                # Estrai valori numerici e unità
+                start_value = float(match_start.group(1))  # Valore numerico iniziale
+                end_value = float(match_end.group(1))      # Valore numerico finale
                 unit_prefix_start = match_start.group(3) or ''  # Prefisso SI iniziale (es. 'm', 'u')
-                unit_start = match_start.group(4)  # Unità finale (es. 'V', 'A')
-                unit_prefix_end = match_end.group(3) or ''
-                unit_end = match_end.group(4)
+                unit_start = match_start.group(4)  # Unità iniziale (es. 'A', 'V')
+                unit_prefix_end = match_end.group(3) or ''  # Prefisso SI finale
+                unit_end = match_end.group(4)  # Unità finale
 
                 # Verifica che le unità siano consistenti
-                if (unit_prefix_start + unit_start) == (unit_prefix_end + unit_end):
-                    full_unit = (unit_prefix_start + unit_start).upper()  # Unità finale in maiuscolo
+                if (unit_prefix_start + unit_start).lower() == (unit_prefix_end + unit_end).lower():
+                    # Combina il prefisso SI in minuscolo con l'unità in maiuscolo
+                    full_unit = unit_prefix_start.lower() + unit_start.upper()
                     signal_info = {
                         'Signal Type': signal_type,
                         'Start Value': start_value,
@@ -789,6 +797,7 @@ class Parser:
             print("Errore: Il formato dell'istruzione non è valido.")
         
         return signal_info
+
             
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)

@@ -400,19 +400,20 @@ class Boost:
         if forceramp_signal_instruction:
             signal_name = forceramp_signal_instruction.get('Signal Type')
             print(signal_name)
-            start_voltage = forceramp_signal_instruction.get('Start Voltage')
-            print(start_voltage)
-            end_voltage = forceramp_signal_instruction.get('End Voltage')
+            start_value = forceramp_signal_instruction.get('Start Value')
+            print(start_value)
+            end_voltage = forceramp_signal_instruction.get('End Value')
             print(end_voltage)
             unit = forceramp_signal_instruction.get('Unit')
+            print(unit)
             if re.search('V', unit):
                 if re.search('vbso', signal_name):
-                    self.supplies_8.setVoltage(channel=1, voltage = start_voltage)
+                    self.supplies_8.setVoltage(channel=1, voltage = start_value)
                     self.supplies_8.outp_ON(channel=1)
                     self.scope.single_Trigger__ON()
                     self.scope.single__Trigger__Mode()
                     self.scope.set_trigger__mode('NORM')
-                    voltage = start_voltage
+                    voltage = start_value
                     step = 0.250
                     while voltage >= end_voltage:
                         trig = self.scope.trigger_detect()
@@ -427,6 +428,32 @@ class Boost:
                         voltage = voltage - step
                         sleep(0.5)
                         self.supplies_8.setVoltage(channel=1, voltage = voltage)
+            if re.search('A', unit):
+                if re.search('sw', signal_name):
+                    sleep(0.2)
+                    self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
+                    sleep(0.5)
+                    self.pa.emulMode_2Q(channel=1)
+                    if not self.current_priority_set:
+                        self.pa.setCurrent_Priority(channel=1)
+                        self.current_priority_set = True
+                    # self.pa.setCurrent_Priority(channel=1)
+                    self.pa.setCurrent(channel = 1, current = start_value)
+                    self.pa.set_Limit_Voltage(channel=1, voltage=4.3)
+                    sleep(0.5)
+                    self.pa.outp_ON(channel=1)
+                    current_sw = self.pa.getCurrent(channel=1)
+                    while current_sw < 100e-3:
+                        trig = self.scope.trigger_detect()
+                        if trig == False:
+                            print("trigger detect")
+                            current_sw = self.pa.getCurrent(channel=1)
+                            sleep(0.5)
+                            print(current_sw)
+                            break
+                        current_sw = current_sw - 0.05
+                        self.pa.setCurrent(channel=1, current = current_sw)
+
 
     def waiting_function(self,waiting_instruction:{}):
         if waiting_instruction:
