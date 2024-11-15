@@ -45,7 +45,7 @@ class E3648:
     
     def meas_Voltage(self,channel=1):
         self.supply.write(f'INSTrument:NSELect {str(channel)}')
-        return float(self.supply.query('MEASure:CURRent?'))
+        return float(self.supply.query('MEASure:VOLT?'))
     
     def meas_Voltage(self,channel=1):
         self.supply.write(f'INSTrument:NSELect {str(channel)}')
@@ -68,7 +68,34 @@ class E3648:
             voltage = voltage - step
             sleep(0.5)
             self.setVoltage(channel=channel, voltage = voltage)
-    
+
+    def get_voltage(self, channel):
+        if channel == 1:
+            ch = 'OUT1'
+        elif channel == 2:
+            ch = 'OUT2'
+        else:
+            ch = 'OUT1'
+        
+        command = 'INST:SEL ' +  ch
+        self.supply.write(command)   
+        time.sleep(0.2)
+        return self.supply.query('MEAS:VOLT?')
+
+    def get_current(self, channel):
+        if channel == 1:
+            ch = 'OUT1'
+        elif channel == 2:
+            ch = 'OUT2'
+        else:
+            ch = 'OUT1'
+        
+        command = 'INST:SEL ' +  ch
+        self.supply.write(command)   
+        time.sleep(0.2)
+        return self.supply.query('MEAS:CURR?')   
+ 
+
     class OutputControl:
         def __init__(self, port='GPIB0::7::INSTR') -> None:
             self.supply = E3648(port).supply  
@@ -95,7 +122,10 @@ class E3648:
 
 if __name__ == '__main__':
     supply = E3648(port='GPIB0::8::INSTR')
-    supply.decresing_Ramp(channel=1, start_voltage=4.5, end_voltage=1)
+    supply.setVoltage(channel=1, voltage=3.6)
+    supply.outp_ON(channel=1)
+    voltage = supply.get_voltage(channel=1)
+    print(voltage)
     # print(supply.get__IDN)
     # supply.setRange(channel=2, range=1)
     # supply.setVoltage(channel=2,voltage=14) 

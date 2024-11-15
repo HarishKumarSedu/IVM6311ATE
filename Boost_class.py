@@ -407,7 +407,26 @@ class Boost:
             unit = forceramp_signal_instruction.get('Unit')
             if re.search('V', unit):
                 if re.search('vbso', signal_name):
-                    self.supplies_8.decresing_Ramp(channel=1,start_voltage=start_voltage,end_voltage=end_voltage)
+                    self.supplies_8.setVoltage(channel=1, voltage = start_voltage)
+                    self.supplies_8.outp_ON(channel=1)
+                    self.scope.single_Trigger__ON()
+                    self.scope.single__Trigger__Mode()
+                    self.scope.set_trigger__mode('NORM')
+                    voltage = start_voltage
+                    step = 0.250
+                    while voltage >= end_voltage:
+                        trig = self.scope.trigger_detect()
+                        print(trig)
+                        if trig == False:
+                            print("trigger detect")
+                            Vbst_bootstrap = self.supplies_8.get_voltage(channel=1)
+                            sleep(0.5)
+                            print(Vbst_bootstrap)
+                            break
+                        print(voltage)
+                        voltage = voltage - step
+                        sleep(0.5)
+                        self.supplies_8.setVoltage(channel=1, voltage = voltage)
 
     def waiting_function(self,waiting_instruction:{}):
         if waiting_instruction:
