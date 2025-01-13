@@ -392,8 +392,8 @@ class N670x:
         # time.sleep(0.2)
         string = (f'SENS:CURR:RANG 10e-3,(@{str(channel)})')
         self.my_instr.write(string)
-        print (string)
-        print(ch)
+        # print (string)
+        # print(ch)
         return
         
     def get_PeviousTriggered_Voltage(self, channel:int):

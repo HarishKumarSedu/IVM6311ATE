@@ -53,6 +53,7 @@ class Reference:
         self.current_priority_set = False
         self.row_names = []
         self.burn_var = True
+        self.chip_counter = 0
 
     def value_clean(self,value:str):
         value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
@@ -407,40 +408,68 @@ class Reference:
         sleep(0.5)
         self.supplies_8.outp_OFF(channel=2)
 
+    def load_chip_counter(self,filename="chip_counter.txt"):
+        try:
+            # Verifica che filename sia una stringa
+            if not isinstance(filename, str):
+                raise ValueError("Il parametro filename deve essere una stringa.")
+
+            with open(filename, "r") as file:
+                return int(file.read().strip())  # Legge e converte il valore
+        except (FileNotFoundError, ValueError) as e:
+            # Se il file non esiste o il contenuto non è valido, crea il file e restituisci 0
+            print(f"Errore: {e}. Creazione del file con valore iniziale 0.")
+            try:
+                with open(filename, "w") as file:
+                    file.write("0")  # Scrive 0 nel file appena creato
+                return 0  # Restituisce 0
+            except Exception as ex:
+                print(f"Errore durante la creazione del file: {ex}")
+                return 0  # In caso di errore, restituisce 0
+
+
+    def save_chip_counter(self, count, filename="chip_counter.txt"):
+        with open(filename, "w") as file:
+            file.write(str(count))  # Scrive il valore nel file
+
     def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
         try:
-            # Usa un valore di default per `row_names` se non esiste o è vuoto
+            chip_counter = self.load_chip_counter(r"C:\Users\invlab\Documents\IVM6311ATE\IVM6311ATE\chip_counter.txt") # Carica il valore dal file
+            chip_counter += 1  # Incrementa il contatore
+            self.save_chip_counter(chip_counter)  # Salva il nuovo valore nel file
+
+            chip_name = f"chip{chip_counter}"
+
             row_names = self.row_names if hasattr(self, 'Trimming') and self.row_names else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"]
-            
-            # Imposta i valori predefiniti per `best_codes` e `closest_values`
             best_codes = self.best_codes if hasattr(self, 'best_codes') else [None] * len(row_names)
             closest_values = self.closest_values if hasattr(self, 'closest_values') else [None] * len(row_names)
 
-            # Rendi tutte le liste della stessa lunghezza
             max_length = max(len(row_names), len(best_codes), len(closest_values))
             row_names.extend([None] * (max_length - len(row_names)))
             best_codes.extend([None] * (max_length - len(best_codes)))
             closest_values.extend([None] * (max_length - len(closest_values)))
 
-            # Converti `best_codes` in formato esadecimale se non sono None
             best_codes = [format(x, 'X') if x is not None else None for x in best_codes]
 
-            # Crea il dizionario con dati della stessa lunghezza
             data_to_save = {
+                "Chip": [chip_name] * max_length,  # Aggiunge il nome del chip a ogni riga
                 "Trimming": row_names,
                 "Best Codes": best_codes,
                 "Closest Values": closest_values,
             }
+            df_new = pd.DataFrame(data_to_save)
 
-            # Crea il DataFrame e salva in Excel
-            df = pd.DataFrame(data_to_save)
-            # print("Dati che verranno salvati:\n", df)  # Debugging: verifica il contenuto
+            if os.path.exists(filename):
+                existing_df = pd.read_excel(filename, sheet_name="Trimming")
+                combined_df = pd.concat([existing_df, pd.DataFrame([[""] * len(data_to_save)], columns=data_to_save.keys()), df_new], ignore_index=True)
+            else:
+                combined_df = pd.concat([df_new, pd.DataFrame([[""] * len(data_to_save)], columns=data_to_save.keys())], ignore_index=True)
 
             with pd.ExcelWriter(filename, engine="openpyxl", mode="w") as writer:
-                df.to_excel(writer, sheet_name="Trimming", index=False)
+                combined_df.to_excel(writer, sheet_name="Trimming", index=False)
 
             print(f"File salvato correttamente come {filename}.")
-        
+
         except Exception as e:
             print(f"Errore durante il salvataggio: {e}")
 

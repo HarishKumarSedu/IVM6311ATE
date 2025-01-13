@@ -433,9 +433,10 @@ class Boost:
                     sleep(0.2)
                     self.mcp2317.Switch(device_addr=0x23, row=8, col=7, Enable=True)
                     sleep(0.5)
-                    self.scope.single_Trigger__ON()
+                    self.scope.run_mode()
+                    sleep(0.1)
                     self.scope.single__Trigger__Mode()
-                    self.scope.set_trigger__mode('NORM')
+                    sleep(0.1)
                     self.pa.emulMode_2Q(channel=1)
                     if not self.current_priority_set:
                         self.pa.setCurrent_Priority(channel=1)
@@ -455,11 +456,14 @@ class Boost:
                             current_sw = self.pa.getCurrent(channel=1)
                             sleep(0.5)
                             print(current_sw)
+                            if current_sw > 100e-3:
+                                break
                             break
                         current_sw = current_sw - 0.01
                         self.pa.setCurrent(channel=1, current = current_sw)
                         sleep(0.5)
-
+                    self.scope.run_mode()
+                    
 
     def waiting_function(self,waiting_instruction:{}):
         if waiting_instruction:

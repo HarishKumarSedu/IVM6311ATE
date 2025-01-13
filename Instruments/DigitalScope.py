@@ -43,6 +43,13 @@ class dpo_2014B:
         # TRIGger:MAIn:MODe { AUTO | NORMal }
         self.scope.write(f'TRIGger:MAIn:MODe {mode}')
 
+    def run_mode(self):
+        self.scope.write(f'TRIG:A:MOD AUTO')
+        self.scope.write(f'ACQ:FASTA:STATE ON')
+        self.scope.write(f'ACQ:FASTA:STATE OFF')
+        self.scope.write(f'HOR:RECO 1000000')
+        self.scope.write(f'ACQ:STATE ON')
+
     def init_scopePosEdge__Trigger(self,channel='CH1'):
         self.scope.write(':TRIG:A:TYP EDG')
         self.scope.write(f':TRIG:A:EDGE:SOU {channel}')
@@ -62,8 +69,10 @@ class dpo_2014B:
         # self.scope.write(':ACTONEV:REPEATC 1')
 
     def single__Trigger__Mode(self):
-        self.scope.write('ACQUIRE:STOPAFTER SEQUENCE')
+        self.scope.write('FPA:PRESS SING')
 
+    def acquire_State_Off(self):
+        self.scope.write('ACQuire:STATE OFF')
     def single_Trigger__ON(self):
         self.scope.write('ACQuire:STATE ON')
     def single_Trigger__RUN(self):
