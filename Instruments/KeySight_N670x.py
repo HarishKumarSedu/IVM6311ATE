@@ -448,6 +448,9 @@ class N670x:
     def emulMode_Ammeter(self,channel:int):
         self.my_instr.write(f'EMUL AMETer,(@{str(channel)})')
 
+    def emulMode_Voltmeter(self,channel:int):
+        self.my_instr.write(f'EMUL VMETer,(@{str(channel)})')
+
     def Set_4Q(self, channel:int, voltage):
         self.my_instr(f'VOLTage <value>, (@<channel>)')
         self.my_instr.write(f'SOURce:FUNCtion:MODE SOURce,(@{str(channel)})')

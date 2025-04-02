@@ -1,5 +1,3 @@
-
-
 import pandas as pd
 from dft_syntaxparser import Parser
 import re
@@ -23,11 +21,11 @@ class Reference:
 
     ############################ initialization
     def __init__(self):
-        self.data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
-        self.procedures = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Procedure')
+        self.data = pd.read_excel('IVM6021_ATE_TM_web.xlsx', sheet_name='Trimming')
+        self.procedures = pd.read_excel('IVM6021_ATE_TM_web.xlsx', sheet_name='Procedure')
         self.mcp = MCP2221()
         self.mcp2317 = MCP2317(mcp=self.mcp)
-        self.oscilloscope = dpo_2014B('USB0::0x0699::0x0456::C014545::INSTR')
+        self.oscilloscope = dpo_2014B('USB0::0x0699::0x0401::C020132::INSTR')
         self.pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
         self.ps_gpib = E3648('GPIB0::6::INSTR')
         self.supplies = E3648('GPIB0::7::INSTR')
@@ -35,7 +33,8 @@ class Reference:
         self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
         self.parser = Parser()
         self.voltmeter = A34461('USB0::0x2A8D::0x1401::MY57200246::INSTR')
-        self.slave_address = 0x6c
+        self.ammeter = A34461('USB0::0x2A8D::0x1401::MY57216238::INSTR')
+        self.slave_address = 0x68
         self.trim = Trim(mcp=self.mcp, mcp2317=self.mcp2317)
         self.reg_trim = None
         self.LSB_trim = None
@@ -52,22 +51,47 @@ class Reference:
         self.new_register_val2 = None
         self.current_priority_set = False
         self.row_names = []
-        self.burn_var = True
+        self.burn_var = False
         self.chip_counter = 0
 
-    def value_clean(self,value:str):
-        value = (lambda value : value.replace(',','.') if re.findall(',',value) else value)(value=value)
-        # value = re.sub(r'[a-zA-Z]+$', '', value) # use it when you want to replace the any string in the number 
-        value = re.sub(r'[v|V]|[a|A]|[hZ|HZ]+$', '', value) # use it when you want to replace the any string in the number 
-        value = (lambda value : float(value.replace('m',''))*10**-3  if isinstance(value,str)    and re.findall('m',value) else value)(value=value)
-        value = (lambda value : float(value.replace('n',''))*10**-9  if isinstance(value,str)    and re.findall('n',value)  else value)(value=value)
-        value = (lambda value : float(value.replace('u',''))*10**-6  if isinstance(value,str)    and re.findall('u',value)  else value)(value=value)
-        value = (lambda value : float(value.replace('k',''))*10**3   if isinstance(value,str)    and re.findall('k',value)  else value)(value=value)
-        value = (lambda value : float(value.replace('M',''))*10**6   if isinstance(value,str)    and re.findall('M',value)  else value)(value=value)
-        value = (lambda value : float(value.replace('G',''))*10**9   if isinstance(value,str)    and re.findall('G',value)  else value)(value=value)
-        if not isinstance(value,float) :
-            value = float(value)
-        return value
+    def value_clean(self, value):
+        # Se il valore è già un numero, restituiscilo direttamente con unità vuota
+        if isinstance(value, (int, float)):
+            return float(value), ""
+
+        # Converte in stringa e normalizza la virgola in punto
+        value = str(value).replace(',', '.')
+
+        # Identifica l'unità di misura (Volt, Ampere, Hertz)
+        match = re.search(r'([munkMG]?[VAHz])$', value, re.IGNORECASE)
+        unit = match.group(1).upper() if match else ""
+
+        # Rimuove l'unità dalla stringa numerica
+        if match:
+            value = value[:match.start()]
+
+        # Gestione dei prefissi metrici (milli, micro, nano, kilo, mega, giga)
+        multipliers = {
+            'm': 1e-3,  # milli
+            'u': 1e-6,  # micro
+            'n': 1e-9,  # nano
+            'k': 1e3,   # kilo
+            'M': 1e6,   # mega
+            'G': 1e9    # giga
+        }
+
+        # Trova e applica il prefisso se presente
+        match = re.search(r'([munkMG])', value)
+        multiplier = multipliers.get(match.group(1), 1) if match else 1
+        value = value.replace(match.group(1), '') if match else value
+
+        # Converte in float
+        try:
+            value = float(value) * multiplier
+        except ValueError:
+            raise ValueError(f"Valore non valido: {value}")
+
+        return value, unit
 
     def read_yaml(self,path_to_yaml: Path) -> ConfigBox:
         try:
@@ -118,21 +142,20 @@ class Reference:
 
     def execute_startup(self):
         startup_procedure = self.procedures['Startup'].loc[0].split('\n')
+        print(startup_procedure)
         for instruction in startup_procedure:
-            instruction = instruction.lower()
-            if re.match('0x', instruction):
-                reg_data = self.parser.extract_RegisterAddress__Instruction(instruction) 
-                sleep(0.5)
-                # print(reg_data)
-                self.write_device(reg_data) 
-            if re.match('Force__SDWN__1.8V'.lower(), instruction):
-                print('Force 1.8V on SDWN')
-                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
-                sleep(0.5)
-                self.pa.setCurrent(channel=4, current= 0.2)
-                sleep(0.5)
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=True)
-                sleep(0.5)
+            instruction = instruction.strip().lower()
+            print(instruction)
+            if re.match('Force__VDDIO__3.3V'.lower(), instruction):
+                print('Force__VDDIO__3.3V')
+                self.supplies.setVoltage(channel=2, voltage=3.3)
+                self.supplies.setCurrent(channel=2, current=0.2)
+                self.supplies.outp_ON(channel=2)
+            if re.match('Force__VCC__7V'.lower(), instruction):
+                print('Force__VCC__7V')
+                self.supplies.setVoltage(channel=1, voltage=14)
+                self.supplies.setCurrent(channel=1, current=0.2)
+                self.supplies.outp_ON(channel=1)
 
     def write_device(self, data: {}):
         # Function to convert hexadecimal or numeric values to integers
@@ -149,6 +172,7 @@ class Reference:
         reg_addr = convert_to_int(data.get('RegAddr'))
         data_value = convert_to_int(data.get('Data'))
         # Read the register from the device
+        sleep(0.5)
         device_data = self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg_addr])[0]
         # print(hex(device_data))
         # Calculate the bit width and ensure it's an integer
@@ -167,19 +191,23 @@ class Reference:
         else:
             print(f'Data is out of width')
 
-    def execute_Enable_Ana_Testpoint(self):
-        startup_procedure = self.procedures['Enable_Ana_Testpoint'].loc[0].split('\n')
+    def execute_startup_ref(self):
+        startup_procedure = self.procedures['REF_procedure'].loc[0].split('\n')
         for instruction in startup_procedure:
-            instruction = instruction.lower()
+            instruction = instruction.strip().lower()
             if re.match('0x', instruction):
                 reg_data = self.parser.extract_RegisterAddress__Instruction(instruction)
                 self.write_device(reg_data)
-            if re.match('FORCE__SDWN__OPEN'.lower(), instruction):
-                print('Force SDWN OPEN')
-                self.pa.arb_Ramp__Voltage(channel=4,initial_Voltage=1.8,end_Voltage= 0, initial_Time=0.2, raise_Time= 1, end_Time = 0.2)
-                sleep(0.5)
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=4, Enable=False)
-                sleep(0.5)
+            if re.match('Force__V5VDRV__5.2V'.lower(), instruction):
+                print('Force__V5VDRV__5.2V')
+                self.supplies_8.setVoltage(channel=1, voltage=5.2)
+                self.supplies_8.setCurrent(channel=1,current=0.2)
+                self.supplies_8.outp_ON(channel=1)
+            if re.match('Wait'.lower(), instruction):
+                waiting_instruction = self.parser.extract_wait_instruction(instruction)
+                print(f'Wait : {waiting_instruction}')
+                self.waiting_function(waiting_instruction)
+
     
     def execute_Boost_test_default(self):
         startup_procedure = self.procedures['Test_Boost'].loc[0].split('\n')
@@ -207,28 +235,25 @@ class Reference:
             signal_Unit = measure_signal.get('Unit')
             signal_Name = measure_signal.get('Signal')
             measure_values = None
-            # print(signal_Unit)
-            # print(signal_Name)
             if re.search('voltage', signal_Unit):
-                if re.search('fsyn', signal_Name):
-                    self.trim_OCP(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
-                else: 
+                if re.search('hwmute', signal_Name):
+                    self.mcp2317.Switch(device_addr=0x22, row=6, col=1, Enable=True)
+                    sleep(0.5)
                     self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
+                #     self.trim_OCP(self.reg_trim,self.LSB_trim,self.MSB_trim,self.reg_trim2,self.LSB_trim2,self.MSB_trim2)
+                # else: 
+                #     self.trim_values,self.reg_value = self.trim_sweep_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
             if re.search('current', signal_Unit):
-                pa = N670x('USB0::0x0957::0x0F07::MY50002157::INSTR')
-                self.mcp2317.Switch(device_addr=0x20, row=1, col=2, Enable=True)
-                sleep(1)
-                self.mcp2317.Switch(device_addr=0x21, row=3, col=3, Enable=True)
-                sleep(0.1)
-                pa.outp_ON(channel=3)
-                pa.setMeter_Range_Auto__Current(channel=3)
-                sleep(1)
-                measure_values = pa.getCurrent(channel=3)
-                # print(f' value : {measure_values}')
-                sleep(1)
-                pa.outp_OFF(channel=3)
+                if re.search('hwmute', signal_Name):
+                    self.mcp2317.Switch(device_addr=0x22, row=6, col=2, Enable=True)
+                    sleep(0.5)
+                    self.pa.emulMode_Ammeter(channel=1)
+                    self.pa.outp_ON(channel=1)
+                    self.trim_values,self.reg_value = self.trim_sweep_current(self.reg_trim,self.LSB_trim,self.MSB_trim)
+                    self.pa.outp_OFF(channel=1)
+
             if re.search('frequency', signal_Unit):
-                self.trim_values,self.reg_value = self.trim_sweep_freq(self.reg_trim,self.LSB_trim,self.MSB_trim)
+                self.trim_values,self.reg_value = self.trim_sweep_freq(self.reg_trim,self.LSB_trim,self.MSB_trim, self.best_codes)
 
 
     def force_signal(self,force_signal_instruction: {}):
@@ -286,14 +311,19 @@ class Reference:
         ref.closest_values.append(ref.valore_multimetro)
         return self.valore_multimetro, self.new_register_val1, self.new_register_val2
     
+    def trim_sweep_current(self,reg_trim,lsb,msb):
+        # self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
+        self.trim_values,self.reg_value = self.trim.sweep_trim_bit_current(self.reg_trim,self.LSB_trim,self.MSB_trim)
+        return self.trim_values,self.reg_value
+    
     def trim_sweep_voltage(self,reg_trim,lsb,msb):
-        self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
+        # self.mcp2317.Switch(device_addr=0x20, row=1, col=1, Enable=True)
         self.trim_values,self.reg_value = self.trim.sweep_trim_bit_voltage(self.reg_trim,self.LSB_trim,self.MSB_trim)
         return self.trim_values,self.reg_value
     
-    def trim_sweep_freq(self,reg_trim,lsb,msb):
+    def trim_sweep_freq(self,reg_trim,lsb,msb, best_codes):
         # input("Remove the wire that connects motherboars with the matrix number 2")
-        self.trim_values,self.reg_value = self.trim.sweep_trim_bit_freq(self.reg_trim,self.LSB_trim,self.MSB_trim)
+        self.trim_values,self.reg_value = self.trim.sweep_trim_bit_freq(self.reg_trim,self.LSB_trim,self.MSB_trim,self.best_codes)
         return self.trim_values,self.reg_value
 
     def find_best_code(self, trim_values, reg_value, typical):
@@ -310,21 +340,35 @@ class Reference:
             sleep(float(waiting_time))
         
     def ref_DFT(self,data=pd.DataFrame({}), test_name=''):
-        instructions = data[test_name].loc[3].split('\n')
-        print(data[test_name].loc[6])
-        typical = self.value_clean(data[test_name].loc[6])
-        # print(typical)
+        # # Accedere alla riga 3 e confrontare il test_name
+        # if test_name in data.loc[3].values:
+        #     # Se il test_name è trovato, estrarre il valore dalla riga 3
+        #     instructions = data.loc[3].where(data.loc[3] == test_name).dropna().values[0]
+        #     print("Valore trovato nella riga 3:", instructions)
+        # else:
+        #     print(f"{test_name} non trovato nella riga 3.")
+
+        test = data.loc[3].where(data.loc[3] == test_name).dropna().values[0]
+        print(test)
+        col_name = data.columns[data.loc[3] == test].values[0]
+        instructions = data.loc[4, col_name]
+        print("instructions:", instructions)
+        typical = data.loc[7, col_name]
+        print("typical", typical)
+        typical_value, _ = self.value_clean(typical)
+        print(typical_value)
+        instructions = instructions.split('\n')
         for instruction in instructions:
             instruction = instruction.lower()
-            # print(instruction)
+            print(instruction)
             
             if re.match('run', instruction):
                 if re.findall('startup', instruction):
                     print('Startup Procedure')
                     self.execute_startup()
-                if re.findall('Enable_Ana_Testpoint'.lower(), instruction):
-                    print('Enable Ana TestPoint Procedure')
-                    self.execute_Enable_Ana_Testpoint()
+                if re.findall('REF_procedure'.lower(), instruction):
+                    print('Startup_ref procedure')
+                    self.execute_startup_ref()
                 if re.findall('Test_Boost'.lower(), instruction):
                     print('Enable Boost Test Default Procedure')
                     self.execute_Boost_test_default()
@@ -357,7 +401,7 @@ class Reference:
                     self.LSB_trim2 = int(reg_instr.get('lsb2'))
                     self.MSB_trim2 = int(reg_instr.get('msb2'))
             if re.match('calculate', instruction):
-                self.closest_value,self.best_code =self.find_best_code(self.trim_values,self.reg_value,typical)
+                self.closest_value, self.best_code = self.find_best_code(self.trim_values, self.reg_value, typical_value)
                 self.best_codes.append(self.best_code)
                 print(self.best_codes)
                 self.closest_values.append(self.closest_value)
@@ -379,34 +423,35 @@ class Reference:
                 self.waiting_function(waiting_instruction)
 
     def power_on(self):
-        self.output_control = E3648.OutputControl(port='GPIB0::7::INSTR')
-        self.supplies_8.setVoltage(channel=1, voltage=5)
+        self.supplies.setVoltage(channel=2, voltage=3.3)
+        self.supplies.setCurrent(channel=2, current=0.2)
+        self.supplies.outp_ON(channel=2)
+        sleep(0.5)
+        self.supplies.setVoltage(channel=1, voltage=14)
+        self.supplies.setCurrent(channel=1, current=0.2)
+        self.supplies.outp_ON(channel=1)
+        sleep(0.5)
+        self.supplies_8.setVoltage(channel=1,voltage=5.2)
         self.supplies_8.setCurrent(channel=1, current=0.2)
         self.supplies_8.outp_ON(channel=1)
-        self.output_control.output_on(channel1=1, channel2=2 , voltage1=3.6, voltage2=1.8, current1=0.2, current2=0.2)
         sleep(0.5)
-        self.supplies_8.setVoltage(channel=2, voltage=3.6)
-        self.supplies_8.setCurrent(channel=2, current=0.2)
-        sleep(0.5)
-        self.mcp2317.Switch(device_addr=0x23, row = 7, col = 5, Enable= True)
-        sleep(0.5)
-        self.supplies_8.outp_ON(channel=2)
-        sleep(0.5)
-        self.pa.setVoltage(channel=4,voltage=1.8)
-        self.pa.setCurrent(channel=4, current=0.2)
-        self.pa.outp_ON(channel=4)
 
     def power_off(self):
-        self.pa.outp_OFF(channel=4)
-        self.pa.outp_OFF(channel=3)
-        self.pa.outp_OFF(channel=1)
-        self.supplies.outp_OFF(channel=1)
+        self.supplies_8.outp_OFF(channel=2)
         sleep(0.5)
-        self.supplies.outp_OFF(channel=2)
-        sleep(0.1)
         self.supplies_8.outp_OFF(channel=1)
         sleep(0.5)
-        self.supplies_8.outp_OFF(channel=2)
+        self.supplies.outp_OFF(channel=2)
+        sleep(0.5)
+        self.supplies.outp_OFF(channel=1)
+        sleep(0.5)
+        self.pa.outp_OFF(channel=1)
+        sleep(0.5)
+        self.pa.outp_OFF(channel=2)
+        sleep(0.5)
+        self.pa.outp_OFF(channel=3)
+        sleep(0.5)
+        self.pa.outp_OFF(channel=4)
 
     def load_chip_counter(self,filename="chip_counter.txt"):
         try:
@@ -432,15 +477,16 @@ class Reference:
         with open(filename, "w") as file:
             file.write(str(count))  # Scrive il valore nel file
 
-    def save_to_excel(self, filename="DFT_6311_Result.xlsx"):
+    def save_to_excel(self, filename="DFT_6201_Result.xlsx", chip_number=None):
         try:
-            chip_counter = self.load_chip_counter(r"C:\Users\invlab\Documents\IVM6311ATE\IVM6311ATE\chip_counter.txt") # Carica il valore dal file
-            chip_counter += 1  # Incrementa il contatore
-            self.save_chip_counter(chip_counter)  # Salva il nuovo valore nel file
+            # Usa direttamente chip_number, senza caricare dal file
+            if chip_number is None:
+                raise ValueError("Il numero del chip deve essere fornito")
 
-            chip_name = f"chip{chip_counter}"
+            # Sostituire chip_name con chip_number
+            chip_name = f"chip{chip_number}"
 
-            row_names = self.row_names if hasattr(self, 'Trimming') and self.row_names else ["VBGR_ADJ_TRIM", "TSDN", "FRO_CLOCK", "BST_OCP_TRIM_reg1", "BST_OCP_TRIM_reg2"]
+            row_names = self.row_names if hasattr(self, 'Trimming') and self.row_names else ["Bandgap voltage", "Bandgap current", "FRO"]
             best_codes = self.best_codes if hasattr(self, 'best_codes') else [None] * len(row_names)
             closest_values = self.closest_values if hasattr(self, 'closest_values') else [None] * len(row_names)
 
@@ -452,7 +498,7 @@ class Reference:
             best_codes = [format(x, 'X') if x is not None else None for x in best_codes]
 
             data_to_save = {
-                "Chip": [chip_name] * max_length,  # Aggiunge il nome del chip a ogni riga
+                "Chip": [chip_name] * max_length,  # Aggiunge il numero del chip a ogni riga
                 "Trimming": row_names,
                 "Best Codes": best_codes,
                 "Closest Values": closest_values,
@@ -473,133 +519,138 @@ class Reference:
         except Exception as e:
             print(f"Errore durante il salvataggio: {e}")
 
-    
-    def write_trimming_bit(self):
+    def write_trimming_bit(self, chip_number):
         
         self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0x01])
-        registers = [0xB0, 0xB3, 0xEF, 0xB1, 0xB2]
+        registers = [0xC0, 0xC1]
+        self.best_codes.pop(0)
+        print(self.best_codes)
+        fro = self.best_codes[1]
+        push_reg = self.mcp.mcpRead(SlaveAddress=0x68, data=[0xCA], Nobytes=1)[0]  
         for reg, code in zip(registers, self.best_codes):
             self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[reg, code])
+        if push_reg == 0xFF:
+            self.mcp.mcpWrite(SlaveAddress=0x68, data=[0xC1, fro])
+            self.mcp.mcpWrite(SlaveAddress=0x68, data=[0xCA, 0xFE])
+            # self.mcp.mcpWrite(SlaveAddress=0x68, data=[reg_trim, new_register_val])
+        else:
+            self.mcp.mcpWrite(SlaveAddress=0x68, data=[0xC1, fro])
+            self.mcp.mcpWrite(SlaveAddress=0x68, data=[0xCA, 0xFF])
+        
+        print(self.mcp.mcpRead(SlaveAddress=0x68, data=[0xC1], Nobytes=1)[0])  
+       
+            
+        # Scrittura del chip number nel registro 0xAE (se specificato)
+        if chip_number is not None:
+            self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xAE, int(chip_number)])
 
-    def burn_procedure(self):
-        registers = [0xB0, 0xB3, 0xEF, 0xB1, 0xB2]
-        names = ["B0", "B3", "EF", "B1", "B2"]
+        print(self.mcp.mcpRead(SlaveAddress=0x68, data=[0xAE], Nobytes=1)[0])  
 
+    def burn_procedure(self, chip_number):
+        registers = [0xC0, 0xC1]  # Aggiunto registro 0xBB
+        names = ["C0", "C1"]
+
+        # Lettura iniziale dei registri
         read_values = [self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg], Nobytes=1)[0] for reg in registers]
         for i, name in enumerate(names):
-            print(f"value read from the register {name} {read_values[i]}. {name}'s trimming value {self.best_codes[i]}")
+            # Usa chip_number per BB invece di best_codes[i]
+            trimming_value = chip_number if name == "AE" else (self.best_codes[i] if i < len(self.best_codes) else 'N/A')
+            print(f"Value read from the register {name}: {read_values[i]}. {name}'s trimming value: {trimming_value}")
 
-        for i, (reg_value, best_code) in enumerate(zip(read_values, self.best_codes)):
-            if reg_value != best_code:
+        # Confronto tra valori letti e attesi
+        for i, (reg_value, best_code) in enumerate(zip(read_values, self.best_codes + [chip_number])):  # Usa chip_number per BB
+            if i < len(self.best_codes) and reg_value != best_code:
                 print(f"Reg {names[i]} has different value")
                 return
-            
-        self.supplies_8.setVoltage(channel=2, voltage=14)
-        self.supplies_8.setCurrent(channel=2,current=0.5)
+
+        # Alimentazione
+        self.supplies_8.setVoltage(channel=2, voltage=12)
+        self.supplies_8.setCurrent(channel=2, current=0.3)
         self.supplies_8.outp_ON(channel=2)
         sleep(0.5)
-        self.supplies_8.setVoltage(channel=1, voltage=8)
-        self.supplies_8.setCurrent(channel=1,current=0.5) 
-        self.supplies_8.outp_ON(channel=1)
+        self.supplies.setVoltage(channel=1, voltage=8)
+        self.supplies.setCurrent(channel=1, current=0.3)
+        self.supplies.outp_ON(channel=1)
         sleep(0.5)
+        ########################Burnign VBGcurrent################
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3E, 0x10])
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3F, 0x80])
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3E, 0x12])
+        ########################Burnign VBG&FRO################
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3E, 0x10])
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3F, 0x81])
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3E, 0x12])
+        ########################Burnign chipID################
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3E, 0x10])
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3F, 0x6E])
+        self.mcp.mcpWrite(SlaveAddress= self.slave_address, data = [0x3E, 0x12])
 
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0xFE, 0x00])
-        self.mcp.mcpWrite(SlaveAddress=self.slave_address, data=[0x00, 0x01])
 
-        burn_registers = [
-        [0xFE,0x01],
-        [0x0F,0x80],
-        [0xFE,0x00],
-        [0xB4,0x00], # BOOST TRISTATE
-        [0xFE,0x01],
-        # [0xC8,0x03], # cHIP ID 
-        # [0xB1,0x1F],
-        [0xAF,0x00], # BLOCK BURN 
-        # [0xAF,0x98], # single ID byte burn 
-        # [0xAF,0x83], # single ID byte burn 
-        [0xAE,0x02],
-        [0xAE,0x00],
-        ]
-
-        for instruction in burn_registers:
-            self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
-            sleep(0.3)
-        
-        final_instructions = [
-            [0xFE, 0x00],
-            [0x00, 0x00],
-            [0x00, 0x01],
-            [0xFE, 0x01]
-        ]
-
-        for instruction in final_instructions:
-            self.mcp.mcpWrite(SlaveAddress=0x6c, data=instruction)
-
-        new_read_values = [self.mcp.mcpRead(SlaveAddress=self.slave_address, data=[reg], Nobytes=1)[0] for reg in registers]
-        
-        for i, name in enumerate(names):
-            if new_read_values[i] == read_values[i]:
-                print(f"Value burned for register {name}")
-            else:
-                print(f"Value not burned for register {name}")
-        
-        self.supplies_8.setVoltage(channel=1, voltage=3.6)
-        self.supplies_8.setCurrent(channel=1,current=0.2) 
-        sleep(0.5)
-        self.supplies_8.setVoltage(channel=2, voltage=5)
-        self.supplies_8.setCurrent(channel=2,current=0.2)
 
 if __name__ == '__main__':
-    ref = Reference()
-    ref.power_on()
-    ref_data = pd.read_excel('IVM6311_Testing_scripts.xlsx', sheet_name='Trimming')
-    tests = ref.read_yaml(path_to_yaml=Path('Trimming.yaml'))
-    print(tests)
-    best_codes = []
-    closest_values = []
-    try:
-        for test in tests.Trim:
-            for i in range (0x20,0x27):
+    chip_number = 1  # Inizializza il numero del chip
+    while True:  # Loop infinito
+        answer = input("Do you want to insert a new chip? (y/n): ").strip().lower()
+
+        if answer == 'y':
+            print(f"\n--- Chip number {chip_number} ---")
+            ref = Reference()
+            ref.power_on()
+            ref_data = pd.read_excel('IVM6021_ATE_TM_web.xlsx', sheet_name='Trimming')
+            # print(ref_data)
+            tests = ref.read_yaml(path_to_yaml=Path('Trimming.yaml'))
+            print(tests)
+
+            try:
+                for test in tests.Trim:
+                    for i in range(0x20, 0x27):
+                        sleep(0.5)
+                        ref.mcp2317.Switch_reset(device_addr=i)
+                    print(f'............ {test}')     
+                    ref.ref_DFT(ref_data, test)
+                # ref.save_to_excel("DFT_6201_Result.xlsx", chip_number)
+
+                if ref.burn_var:
+                    ref.save_to_excel("DFT_6201_Result.xlsx", chip_number)
+                    ref.write_trimming_bit(chip_number)
+                    ref.burn_procedure(chip_number)
+
+            except TypeError as e:
+                print(f'ZIO Entered in Exception loop :> {e}')
+                traceback.print_exc()
+
+            except KeyboardInterrupt:
+                for i in range(0x20, 0x27):
+                    sleep(0.5)
+                    ref.mcp2317.Switch_reset(device_addr=i)
+                ref.power_off()
+
+            except Exception as e:
+                print(f'PORCO Entered in Exception loop :> {e}')
+                traceback.print_exc()
+                for i in range(0x20, 0x27):
+                    sleep(0.5)
+                    ref.mcp2317.Switch_reset(device_addr=i)
+                ref.power_off()
+
+            for i in range(0x20, 0x27):
                 sleep(0.5)
                 ref.mcp2317.Switch_reset(device_addr=i)
-            print(f'............ {test}')
-            ref.ref_DFT(ref_data, test)
-        ref.save_to_excel("DFT_6311_Result.xlsx")
-        if ref.burn_var == True:
-            ref.write_trimming_bit()
-            ref.burn_procedure()
+            ref.power_off()
 
-    except  TypeError as e:
-        print(f'ZIO Entered in Exception loop :> {e}')
-        traceback.print_exc()
-        pass 
+            chip_number += 1  # Incrementa automaticamente il numero del chip
 
-    except  TypeError as e:
-        print(f'CANE Entered in Exception loop :> {e}')
-        traceback.print_exc()
-        for i in range (0x20,0x27):
-            sleep(0.5)
-            ref.mcp2317.Switch_reset(device_addr=i)
-        ref.power_off()
-        pass 
+        elif answer == 'n':
+            print("End of program")
+            for i in range(0x20, 0x27):
+                sleep(0.5)
+                ref.mcp2317.Switch_reset(device_addr=i)
+            ref.power_off()
+            break  # Esce dal loop e termina il programma
 
-    except  KeyboardInterrupt:
-        for i in range (0x20,0x27):
-            sleep(0.5)
-            ref.mcp2317.Switch_reset(device_addr=i)
-        ref.power_off()
+        else:
+            print("Risposta non valida. Digita 'si' o 'no'.")
 
-    except  Exception as e:
-        print(f'PORCO Entered in Exception loop :> {e}')
-        traceback.print_exc()
-        for i in range (0x20,0x27):
-            sleep(0.5)
-            ref.mcp2317.Switch_reset(device_addr=i)
-        ref.power_off()
 
-for i in range (0x20,0x27):
-    sleep(0.5)
-    ref.mcp2317.Switch_reset(device_addr=i)
-ref.power_off()
 
 

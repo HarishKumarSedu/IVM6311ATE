@@ -1,43 +1,5 @@
 Trim:
-  - VBGR_ADJ_TRIM
-  - TSDN 
-  - FRO_CLOCK
-  - BST_OCP_TRIM
-
-
-Reference:
-  - UVLO
-  - OUT_TEST_FRO_VVCO  
-  - REF_LDO 
-
-AZ_COMP:
-  - 3rd_STG_Current
-  - 2nd_STG_Current  
-  - 1st_STG_Current 
-  - Ground_AZCOMP
-  - OUTN_EXT_PRT
-  - OUTP_EXT_PRT
-  - VCM_AVDD
-
-Boost:
-  - BST_MIRR
-  - BST_RON_LS  
-  - BST_RON_HS 
-  - BST_RON_BYP
-  - BST_LS_DRIVE
-  - BST_BYP
-  - BST_LOGIC_COMP_BSO
-  - BST_LOGIC_COMP_BIAS
-  - BST_IL_FILT
-  - BST_ERR_AMP_BSO
-  - BST_ERR_AMP_BIAS
-  - BST_CLAMP_VBAT_REF
-  - BST_BSO_BIAS_PAR
-  - BST_DAC_BSO
-  - BST_DAC_BIAS
-  - BST_ENV_TRACK
-  - BST_ZC
-  - BST_BOOTSTRAP
-  - BST_ENV_ERR
-  - BST_OCP
-  - BST_FASTCHARGE
+- TRIM_BG
+- TRIM ABS
+- TRIM FRO
+- SAR_ADC_TRIM_TCENTRAL

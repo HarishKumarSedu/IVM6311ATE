@@ -815,5 +815,5 @@ class Parser:
 
 if __name__ == '__main__':
     parser = Parser()
-    print(parser.extract_forceramp_instruction('Ramp__SW__100mA__-100mA'))
+    print(parser.extract_Measure__Instruction('Measure__Current__hwmute'))
     # print(parser.value_clean('2ma'))
